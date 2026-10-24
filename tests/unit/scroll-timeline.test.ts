@@ -8,10 +8,10 @@ import {
   GYM_STOP_START,
   clamp01,
   segmentProgress,
-  updateCameraPath,
   amenityIndexAtProgress,
   sceneIndexAtProgress,
-} from "@/components/landing/three-d/ScrollTimeline";
+} from "@/components/landing/StoryProgress";
+import { updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
 
 interface VectorStub {
   x: number;

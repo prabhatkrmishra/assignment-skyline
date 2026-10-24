@@ -3,6 +3,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { createFloor } from "@/components/landing/three-d/TowerGeometry";
+import { updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
 import {
   BUILD_END,
   BUILD_START,
@@ -12,8 +13,7 @@ import {
   INTERIOR_START,
   clamp01,
   segmentProgress,
-  updateCameraPath,
-} from "@/components/landing/three-d/ScrollTimeline";
+} from "@/components/landing/StoryProgress";
 
 interface TowerCanvasProps {
   scrollContainerRef: RefObject<HTMLElement | null>;

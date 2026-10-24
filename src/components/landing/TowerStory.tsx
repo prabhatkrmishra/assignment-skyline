@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/components/landing/three-d/ScrollTimeline";
+import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/components/landing/StoryProgress";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
