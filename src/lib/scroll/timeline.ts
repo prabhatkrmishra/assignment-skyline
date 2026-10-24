@@ -19,9 +19,12 @@ export const INTERIOR_START = SCENE_RANGES.interior.start;
 export const INTERIOR_END = SCENE_RANGES.interior.end;
 export const AMENITIES_START = SCENE_RANGES.amenities.start;
 export const AMENITIES_END = SCENE_RANGES.amenities.end;
-export const POOL_STOP_START = AMENITIES_START;
-export const GYM_STOP_START = 0.72;
-export const GARDEN_STOP_START = 0.8;
+export const HERO_FACADE_CLOSE_DURATION = 0.035;
+// Allow the facade to close and the camera to leave the apartment before the Pool panel appears.
+export const AMENITY_TRANSITION_END = AMENITIES_START + HERO_FACADE_CLOSE_DURATION + 0.015;
+export const POOL_STOP_START = AMENITY_TRANSITION_END;
+export const GYM_STOP_START = 0.765;
+export const GARDEN_STOP_START = 0.82;
 export const CTA_START = SCENE_RANGES.callToAction.start;
 
 // Interior camera approach and CTA camera beats are named here so all timing stays editable.
@@ -37,7 +40,6 @@ export const ROOM_LABEL_STARTS = Object.freeze({
 });
 export const ROOM_LABEL_ENTER_DURATION = 0.022;
 export const ROOM_LABEL_EXIT_DURATION = 0.018;
-export const HERO_FACADE_CLOSE_DURATION = 0.035;
 
 export const FLOOR_COUNT = 24;
 export const FLOOR_HEIGHT = 3.2;
@@ -135,8 +137,9 @@ export function sceneIndexAtProgress(progress: number): 0 | 1 | 2 | 3 | 4 {
 }
 
 /** Amenity copy follows the same waypoint progress as the camera path. */
-export function amenityIndexAtProgress(progress: number): 0 | 1 | 2 {
+export function amenityIndexAtProgress(progress: number): -1 | 0 | 1 | 2 {
   const value = clamp01(progress);
+  if (value < POOL_STOP_START) return -1;
   if (value < GYM_STOP_START) return 0;
   if (value < GARDEN_STOP_START) return 1;
   return 2;

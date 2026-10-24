@@ -13,6 +13,7 @@ import {
   INTERIOR_CAMERA_APPROACH_PROGRESS,
   INTERIOR_END,
   INTERIOR_START,
+  POOL_STOP_START,
   PODIUM_TOP,
   clamp01,
 } from "@/lib/scroll/timeline";
@@ -51,9 +52,9 @@ const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
 /** Amenity fly-through keyframes: the initial point joins the interior pose continuously. */
 const AMENITY_PATH: readonly CameraKeyframe[] = [
   { t: AMENITIES_START, ...interiorPose },
-  { t: GYM_STOP_START, position: [31, 14.5, 26], target: [23, 1.1, 13] },
-  { t: GARDEN_STOP_START, position: [-31, 11, 14], target: [-23, 2.5, 2] },
-  { t: CTA_START, position: [25, 12, -32], target: [16, 1.1, -21] },
+  { t: POOL_STOP_START, position: [31, 14.5, 26], target: [23, 1.1, 13] },
+  { t: GYM_STOP_START, position: [-31, 11, 14], target: [-23, 2.5, 2] },
+  { t: GARDEN_STOP_START, position: [25, 12, -32], target: [16, 1.1, -21] },
 ];
 
 /** The CTA pulls out from the garden into a wide golden-hour hero shot. */
@@ -95,6 +96,8 @@ function samplePath(progress: number, path: readonly CameraKeyframe[]): CameraPo
   if (nextIndex < 1) nextIndex = 1;
   const previous = path[nextIndex - 1];
   const next = path[Math.min(nextIndex, path.length - 1)];
+  if (value <= previous.t) return { position: previous.position, target: previous.target };
+  if (value >= next.t) return { position: next.position, target: next.target };
   const duration = Math.max(0.000001, next.t - previous.t);
   const t = smoothstep((value - previous.t) / duration);
 
@@ -118,7 +121,14 @@ function samplePath(progress: number, path: readonly CameraKeyframe[]): CameraPo
 /** Pure camera pose function. Same progress always yields the same position and target. */
 export function getCameraPose(progress: number): CameraPose {
   const value = clamp01(progress);
-  if (value >= AMENITIES_START && value <= CTA_START) return samplePath(value, AMENITY_PATH);
+  if (value >= AMENITIES_START && value <= CTA_START) {
+    // Garden is a deliberate held stop until the CTA transition begins.
+    if (value >= GARDEN_STOP_START) {
+      const garden = AMENITY_PATH[AMENITY_PATH.length - 1];
+      return { position: garden.position, target: garden.target };
+    }
+    return samplePath(value, AMENITY_PATH);
+  }
   if (value > CTA_START) return samplePath(value, CTA_PATH);
   return samplePath(value, CAMERA_KEYFRAMES);
 }

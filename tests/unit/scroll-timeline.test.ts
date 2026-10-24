@@ -11,6 +11,7 @@ import {
   amenityIndexAtProgress,
   sceneIndexAtProgress,
   FLOOR_COUNT,
+  POOL_STOP_START,
   FLOOR_HEIGHT,
   HERO_FLOOR_NUMBER,
   INTERIOR_END,
@@ -75,12 +76,15 @@ describe("scroll timeline", () => {
     expect(sceneIndexAtProgress(CTA_START)).toBe(4);
   });
 
-  it("keeps each amenity panel until the camera reaches the next stop", () => {
-    expect(amenityIndexAtProgress(AMENITIES_START)).toBe(0);
+  it("changes amenity copy at the matching camera stop, not while flying toward it", () => {
+    expect(amenityIndexAtProgress(AMENITIES_START)).toBe(-1);
+    expect(amenityIndexAtProgress(POOL_STOP_START - 0.001)).toBe(-1);
+    expect(amenityIndexAtProgress(POOL_STOP_START)).toBe(0);
     expect(amenityIndexAtProgress(GYM_STOP_START - 0.001)).toBe(0);
     expect(amenityIndexAtProgress(GYM_STOP_START)).toBe(1);
     expect(amenityIndexAtProgress(GARDEN_STOP_START - 0.001)).toBe(1);
     expect(amenityIndexAtProgress(GARDEN_STOP_START)).toBe(2);
+    expect(amenityIndexAtProgress(CTA_START - 0.001)).toBe(2);
   });
 
   it("keeps the camera path finite and clamped at both ends", () => {
@@ -192,13 +196,15 @@ describe("camera choreography", () => {
 
   it("hits each Catmull-Rom amenity stop exactly at its named progress boundary", () => {
     expect(getCameraPose(AMENITIES_START).position).toEqual(getCameraPose(INTERIOR_END).position);
-    expect(getCameraPose(GYM_STOP_START).position).toEqual([31, 14.5, 26]);
-    expect(getCameraPose(GARDEN_STOP_START).position).toEqual([-31, 11, 14]);
+    expect(getCameraPose(POOL_STOP_START).position).toEqual([31, 14.5, 26]);
+    expect(getCameraPose(GYM_STOP_START).position).toEqual([-31, 11, 14]);
+    expect(getCameraPose(GARDEN_STOP_START).position).toEqual([25, 12, -32]);
+    expect(getCameraPose((GARDEN_STOP_START + CTA_START) / 2).position).toEqual([25, 12, -32]);
     expect(getCameraPose(CTA_START).position).toEqual([25, 12, -32]);
   });
 
   it("has continuous poses at scene boundaries and is deterministic when reversed", () => {
-    for (const boundary of [BUILD_START, BUILD_END, INTERIOR_END, GYM_STOP_START, GARDEN_STOP_START, CTA_START]) {
+    for (const boundary of [BUILD_START, BUILD_END, INTERIOR_END, POOL_STOP_START, GYM_STOP_START, GARDEN_STOP_START, CTA_START]) {
       const before = getCameraPose(boundary - 1e-7);
       const at = getCameraPose(boundary);
       const distance = Math.hypot(

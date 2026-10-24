@@ -171,10 +171,10 @@ export function TowerStory() {
         <div className="story-scene-count" aria-hidden="true"><span>0{activeScene + 1}</span><i /><span>05</span></div>
 
         <div ref={storyCopyRef} className={`story-copy page-gutter story-copy--scene-${activeScene}`} aria-live="polite" aria-atomic="true">
-          <span className="eyebrow eyebrow--light">{activeScene === 3 ? `04 / AMENITIES — ${String(activeAmenity + 1).padStart(2, "0")}` : scenes[activeScene].eyebrow}</span>
-          {activeScene === 3 ? <h1>{amenitySlides[activeAmenity].headline}</h1> : <h1>{scenes[activeScene].title}</h1>}
-          <p>{activeScene === 3 ? amenitySlides[activeAmenity].description : scenes[activeScene].body}</p>
-          <span className="story-copy__tag">{activeScene === 3 ? amenitySlides[activeAmenity].tag : scenes[activeScene].tag}</span>
+          <span className="eyebrow eyebrow--light">{activeScene === 3 && activeAmenity >= 0 ? `04 / AMENITIES — ${String(activeAmenity + 1).padStart(2, "0")}` : scenes[activeScene].eyebrow}</span>
+          {activeScene === 3 && activeAmenity >= 0 ? <h1>{amenitySlides[activeAmenity].headline}</h1> : <h1>{scenes[activeScene].title}</h1>}
+          <p>{activeScene === 3 && activeAmenity >= 0 ? amenitySlides[activeAmenity].description : scenes[activeScene].body}</p>
+          <span className="story-copy__tag">{activeScene === 3 && activeAmenity >= 0 ? amenitySlides[activeAmenity].tag : scenes[activeScene].tag}</span>
           {activeScene === 4 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
         </div>
 
