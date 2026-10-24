@@ -324,7 +324,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       }
 
       const reveal = segmentProgress(scrollProgress, INTERIOR_START + 0.02, INTERIOR_END - 0.015);
-      facadePanel.position.x = 1.42 + reveal * 2.2;
+      facadePanel.position.x = reveal * 2.2;
       facadePanel.position.y = 3.65 + reveal * 0.15;
       facadePanel.rotation.y = reveal * -0.2;
 
