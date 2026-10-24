@@ -100,7 +100,7 @@ Required submission artefacts from the assignment:
 
 ## Known verification limitations
 
-The project source and tests have been authored, but the implementation environment currently cannot resolve `registry.npmjs.org` (`EAI_AGAIN`). As a result, dependency installation, automated test execution, type-checking with project dependencies, production compilation, visual browser verification and measured bundle/Lighthouse reports have not yet been completed in this environment. Treat those as pending checks, not passing checks. Re-run them after npm registry access is available.
+The project source and tests have been authored, but the implementation environment currently cannot resolve `registry.npmjs.org` (`EAI_AGAIN`). A `package-lock.json` has therefore not been generated yet. Once the registry is reachable, run `npm install`, retain and commit the generated lockfile, then complete dependency installation, automated tests, type-checking, production compilation, visual browser verification and measured bundle/Lighthouse reports. None of those dependency-backed checks should be treated as passing until their actual commands complete successfully.
 
 ## Assets and credits
 
