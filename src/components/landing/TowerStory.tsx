@@ -164,7 +164,9 @@ export function TowerStory() {
   return (
     <section ref={storyRef} className="story-shell" aria-label="The Skyline story">
       <div className="story-stage">
-        <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill priority sizes="100vw" quality={85} />
+        <div className="story-stage__poster-frame">
+          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill priority sizes="100vw" quality={85} />
+        </div>
         <div className="story-stage__wash" aria-hidden="true" />
         {shouldLoad ? <LazyTowerCanvas scrollContainerRef={storyRef} onUnsupported={handleUnsupported} /> : null}
         <div className="story-stage__grain" aria-hidden="true" />
