@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listingPageHref, updateListingQuery } from "@/lib/properties/search-state";
+import { listingPageHref, shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";
 
 describe("listing query state", () => {
   it("resets pagination when a search criterion changes and preserves other filters", () => {
@@ -28,5 +28,13 @@ describe("listing query state", () => {
       .toBe("/properties?q=Bandra&sort=price-asc&page=2");
     expect(listingPageHref({ q: "Bandra", sort: "price-asc", page: "3" }, 1))
       .toBe("/properties?q=Bandra&sort=price-asc");
+  });
+});
+
+describe("pending listing navigation", () => {
+  it("does not let an intermediate route commit overwrite a newer query", () => {
+    expect(shouldDeferPendingQuerySync("bhk=3&sort=price-asc", "bhk=3")).toBe(true);
+    expect(shouldDeferPendingQuerySync("bhk=3&sort=price-asc", "bhk=3&sort=price-asc")).toBe(false);
+    expect(shouldDeferPendingQuerySync(null, "bhk=3")).toBe(false);
   });
 });

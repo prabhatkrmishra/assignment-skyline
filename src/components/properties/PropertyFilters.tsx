@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { propertyTypes, type PropertySort } from "@/lib/properties/types";
-import { updateListingQuery } from "@/lib/properties/search-state";
+import { shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";
 
 export function PropertyFilters() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export function PropertyFilters() {
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
   const latestQueryRef = useRef(searchParamsString);
+  const pendingQueryRef = useRef<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
   const [minDraft, setMinDraft] = useState(searchParams.get("minPrice") ?? "");
@@ -19,21 +20,37 @@ export function PropertyFilters() {
   const [priceError, setPriceError] = useState("");
 
   useEffect(() => {
+    if (shouldDeferPendingQuerySync(pendingQueryRef.current, searchParamsString)) return;
+    const isOurNavigation = pendingQueryRef.current === searchParamsString;
     latestQueryRef.current = searchParamsString;
+    pendingQueryRef.current = null;
+
+    // Keep an in-progress text/price draft when our own URL update commits. Only
+    // external URL changes (e.g. browser Back/Forward or pagination links) reset drafts.
+    if (!isOurNavigation) {
+      const committed = new URLSearchParams(searchParamsString);
+      setSearchDraft(committed.get("q") ?? "");
+      setMinDraft(committed.get("minPrice") ?? "");
+      setMaxDraft(committed.get("maxPrice") ?? "");
+      setPriceError("");
+    }
   }, [searchParamsString]);
 
-  useEffect(() => setSearchDraft(searchParams.get("q") ?? ""), [searchParams]);
   useEffect(() => {
-    setMinDraft(searchParams.get("minPrice") ?? "");
-    setMaxDraft(searchParams.get("maxPrice") ?? "");
-    setPriceError("");
-  }, [searchParams]);
+    const handlePopState = () => {
+      pendingQueryRef.current = null;
+      latestQueryRef.current = new URLSearchParams(window.location.search).toString();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const navigateWith = useCallback((updates: Record<string, string>, mode: "push" | "replace" = "push") => {
     // Advance the local query snapshot before navigation so rapid filter changes compose
     // with one another instead of overwriting a transition that has not committed yet.
     const query = updateListingQuery(latestQueryRef.current, updates);
     latestQueryRef.current = query;
+    pendingQueryRef.current = query;
     const href = query ? `${pathname}?${query}` : pathname;
     startTransition(() => {
       if (mode === "replace") router.replace(href, { scroll: false });
@@ -79,6 +96,7 @@ export function PropertyFilters() {
     setMaxDraft("");
     setPriceError("");
     latestQueryRef.current = "";
+    pendingQueryRef.current = "";
     startTransition(() => router.push(pathname, { scroll: false }));
   };
 

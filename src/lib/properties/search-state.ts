@@ -20,3 +20,8 @@ export function listingPageHref(search: Record<string, string>, page: number): s
   const query = params.toString();
   return query ? `/properties?${query}` : "/properties";
 }
+
+/** An older route commit must not replace a newer optimistic filter query. */
+export function shouldDeferPendingQuerySync(pendingQuery: string | null, committedQuery: string): boolean {
+  return pendingQuery !== null && pendingQuery !== committedQuery;
+}
