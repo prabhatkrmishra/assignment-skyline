@@ -22,11 +22,10 @@
 import * as THREE from "three";
 import { createFloor } from "@/components/three/Floor";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
-import { addTowerLights, createProceduralEnvironment } from "@/components/three/Lights";
+import { FOG_COLOR, addTowerLights, createProceduralEnvironment, createSkyBackground } from "@/components/three/Lights";
 import { FLOOR_COUNT, FLOOR_HEIGHT, HERO_FLOOR_NUMBER, PODIUM_TOP, initialFloorOffset } from "@/lib/scroll/timeline";
 import type { RoomLabelSeed } from "@/components/three/HeroFloorInterior";
 
-/** Material state tracked per floor for opacity/depthWrite. */
 export interface FloorMaterialState {
   material: THREE.Material;
   baseOpacity: number;
@@ -34,7 +33,6 @@ export interface FloorMaterialState {
   isFrontFacade: boolean;
 }
 
-/** Record for a single floor in the scene. */
 export interface FloorRecord {
   number: number;
   group: THREE.Group;
@@ -46,18 +44,22 @@ export interface FloorRecord {
   materialStates: FloorMaterialState[];
 }
 
-/** A projected room label seed. */
+export interface RooftopRecord {
+  group: THREE.Group;
+  baseY: number;
+}
+
 export interface WorldLabel {
   label: RoomLabelSeed["label"];
   position: THREE.Vector3;
   fadeStart: number;
 }
 
-/** Bundle returned by createTowerScene. */
 export interface TowerSceneBundle {
   scene: THREE.Scene;
   tower: THREE.Group;
   floors: FloorRecord[];
+  rooftop: RooftopRecord;
   slabMeshes: THREE.Mesh[];
   roomLabels: WorldLabel[];
   environment: THREE.Texture;
@@ -188,7 +190,7 @@ function createPodium(geometry: GeometryFactory, tower: THREE.Group, shadowed: b
   tower.add(podium);
 }
 
-function createRooftop(geometry: GeometryFactory, tower: THREE.Group, roofY: number): void {
+function createRooftop(geometry: GeometryFactory, tower: THREE.Group, roofY: number): THREE.Group {
   const rooftop = new THREE.Group();
   rooftop.name = "Rooftop";
   rooftop.position.y = roofY;
@@ -225,6 +227,7 @@ function createRooftop(geometry: GeometryFactory, tower: THREE.Group, roofY: num
   water.position.set(-3.5, 0.19, 1.2);
   rooftop.add(water);
   tower.add(rooftop);
+  return rooftop;
 }
 
 function createAmenityCampus(scene: THREE.Scene, geometry: GeometryFactory, shadowed: boolean): void {
@@ -263,7 +266,7 @@ function createAmenityCampus(scene: THREE.Scene, geometry: GeometryFactory, shad
 function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shadowed: boolean): void {
   const surroundings = new THREE.Group();
   surroundings.name = "Surroundings";
-  const ground = new THREE.Mesh(geometry.box("site-ground", 320, 0.18, 320), material("#8f9a7e", 0.96));
+  const ground = new THREE.Mesh(geometry.box("site-ground", 1800, 0.18, 1800), material("#8f9a7e", 0.96));
   ground.name = "Ground_Plane";
   ground.position.y = -0.18;
   ground.receiveShadow = true;
@@ -453,13 +456,14 @@ function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shado
   createAmenityCampus(scene, geometry, shadowed);
 }
 
-/** Builds the full tower scene graph. */
 export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.Texture): TowerSceneBundle {
   const scene = new THREE.Scene();
   scene.name = "Skyline_Scene";
-  scene.fog = new THREE.Fog("#decbb5", 120, 245);
+  scene.fog = new THREE.Fog(FOG_COLOR, 120, 245);
   const environment = suppliedEnvironment ?? createProceduralEnvironment();
   scene.environment = environment;
+  // Real browser only (tests inject an environment and have no canvas): an opaque, fog-matched sky.
+  if (!suppliedEnvironment) scene.background = createSkyBackground();
   const geometry = new GeometryFactory();
   addTowerLights(scene, shadowed);
   createSurroundings(scene, geometry, shadowed);
@@ -522,10 +526,10 @@ export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.
   }
 
   const roofY = PODIUM_TOP + FLOOR_COUNT * FLOOR_HEIGHT;
-  createRooftop(geometry, tower, roofY);
+  const rooftop = createRooftop(geometry, tower, roofY);
   scene.add(tower);
 
-  return { scene, tower, floors, slabMeshes, roomLabels, environment, geometry };
+  return { scene, tower, floors, rooftop: { group: rooftop, baseY: roofY }, slabMeshes, roomLabels, environment, geometry };
 }
 
 
@@ -547,4 +551,5 @@ export function disposeTowerScene(world: TowerSceneBundle): void {
     });
   });
   world.environment.dispose();
+  if (world.scene.background instanceof THREE.Texture) world.scene.background.dispose();
 }

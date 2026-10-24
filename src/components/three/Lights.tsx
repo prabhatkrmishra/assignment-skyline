@@ -18,7 +18,36 @@
  */
 import * as THREE from "three";
 
-/** Creates a tiny procedural equirectangular environment map (no HDR download required). */
+/** Creates a tiny procedural equirectangular environment; no HDR download is required. */
+/** Fog colour; the sky's horizon row uses the exact same colour so distant ground melts into it with no visible edge. */
+export const FOG_COLOR = "#decbb5";
+
+/**
+ * Camera-relative sky for the scene background, so the 3D world never shows the page poster through
+ * it and never reveals the edge of the ground. Horizon (middle row) and everything below it equal the fog
+ * colour; above it a soft golden-hour gradient rises to blue. Fog is applied after tone mapping, so the
+ * match is exact on screen.
+ */
+export function createSkyBackground(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 512;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is unavailable for the sky background");
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, "#6f93bd");
+  gradient.addColorStop(0.28, "#a9c0d6");
+  gradient.addColorStop(0.43, "#ead9c0");
+  gradient.addColorStop(0.5, FOG_COLOR);
+  gradient.addColorStop(1, FOG_COLOR);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function createProceduralEnvironment(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
@@ -50,7 +79,6 @@ export function createProceduralEnvironment(): THREE.CanvasTexture {
   return texture;
 }
 
-/** Adds hemisphere, sun, cool fill, and rim lights; configures shadows. */
 export function addTowerLights(scene: THREE.Scene, shadowsEnabled: boolean): THREE.DirectionalLight {
   const hemisphere = new THREE.HemisphereLight("#f7ead6", "#58665e", 1.75);
   hemisphere.name = "WarmSky_CoolGround_Fill";
