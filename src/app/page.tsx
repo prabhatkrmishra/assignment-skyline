@@ -6,7 +6,8 @@
  * @framework Next.js (App Router) + TypeScript
  *
  * @description
- * Landing page: renders TowerStory (lazy 3D) and FeaturedHomes. Metadata for SEO.
+ * Landing page, in order: HeroSection (typing headline), TowerStory (scroll-driven lazy 3D with a skip button),
+ * PhilosophySection, then the remaining content and FeaturedHomes. Metadata for SEO.
  *
  * @scope
  * - Landing-page visual design.
@@ -20,7 +21,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowDownRight, ArrowUpRight, Building2, Leaf, ShieldCheck, Waves } from "lucide-react";
+import { HeroSection } from "@/components/landing/HeroSection";
 import { TowerStory } from "@/components/landing/TowerStory";
+import { PhilosophySection } from "@/components/landing/PhilosophySection";
 import { FeaturedHomes } from "@/components/landing/FeaturedHomes";
 
 export const metadata: Metadata = {
@@ -33,26 +36,14 @@ export const metadata: Metadata = {
   },
 };
 
-/** Landing page: poster-first tower story + featured homes. */
+/** Landing page: hero, cinematic tower story, philosophy, then the rest of the content. */
 export default function HomePage() {
   return (
     <main id="main-content">
+      <HeroSection />
       <TowerStory />
 
-      <section className="manifesto-section page-gutter" id="journal">
-        <div className="manifesto-section__label">
-          <span className="eyebrow">THE SKYLINE PHILOSOPHY</span>
-          <span className="manifesto-section__rule" />
-          <span className="manifesto-section__index">01 — 03</span>
-        </div>
-        <div className="manifesto-section__content">
-          <h2>Luxury isn’t more.<br />It’s <em>more considered.</em></h2>
-          <div className="manifesto-section__lower">
-            <p>It is the way morning light moves through a room. The pause between one thing and the next. A place that makes the everyday feel a little less ordinary.</p>
-            <Link className="text-link" href="/properties">Meet your next address <ArrowUpRight size={16} aria-hidden="true" /></Link>
-          </div>
-        </div>
-      </section>
+      <PhilosophySection />
 
       <section className="experience-section" id="amenities" aria-labelledby="experience-title">
         <div className="experience-section__image">

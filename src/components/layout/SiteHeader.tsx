@@ -21,7 +21,7 @@ import { ArrowUpRight, Menu } from "lucide-react";
 const links = [
   { href: "/properties", label: "Residences" },
   { href: "/#amenities", label: "The experience" },
-  { href: "/#journal", label: "Our philosophy" },
+  { href: "/#philosophy", label: "Our philosophy" },
 ];
 
 /** Site header with navigation and theme toggle. */
