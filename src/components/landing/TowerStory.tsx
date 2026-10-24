@@ -24,7 +24,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowDown, ArrowUpRight, ChevronsDown } from "lucide-react";
-import { AMENITIES_START, ARRIVAL_END, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
+import { AMENITIES_START, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
@@ -158,7 +158,12 @@ export function TowerStory() {
 
     const lowPowerTimer = window.setTimeout(() => {
       const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-      setLowPower(Boolean(connection?.saveData) || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2));
+      const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+      setLowPower(
+        Boolean(connection?.saveData)
+        || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2)
+        || (typeof memory === "number" && memory <= 2),
+      );
     }, 0);
 
     return () => {
@@ -174,10 +179,11 @@ export function TowerStory() {
     let lastCanvasEvent = Number.NEGATIVE_INFINITY;
     const apply = (progress: number) => {
       const nextScene = sceneIndexAtProgress(progress);
-      // Keep the arrival headline visible on first paint, then finish its fade from scroll progress.
+      // Arrival: the headline fades in as the section scrolls into view (fully visible by the time the stage pins),
+      // so it is driven by scroll position like everything else. Every other scene is fully opaque.
       if (storyCopyRef.current) {
-        const arrivalFade = 0.72 + 0.28 * Math.min(1, Math.max(0, progress / (ARRIVAL_END * 0.37)));
-        storyCopyRef.current.style.opacity = String(nextScene === 0 ? arrivalFade : 1);
+        const entered = (window.innerHeight - story.getBoundingClientRect().top) / (window.innerHeight * 0.75);
+        storyCopyRef.current.style.opacity = String(nextScene === 0 ? Math.min(1, Math.max(0, entered)) : 1);
       }
       setActiveScene((current) => current === nextScene ? current : nextScene);
       if (progress >= AMENITIES_START && progress < CTA_START) {
