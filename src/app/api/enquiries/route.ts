@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/server";
 import { enquiries, properties } from "@/lib/db/schema";
 import { enquirySchema } from "@/lib/properties/types";
 import { consumeRateLimit, hashClientIp } from "@/lib/security/rate-limit";

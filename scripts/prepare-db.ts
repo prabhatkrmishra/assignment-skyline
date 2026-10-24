@@ -1,5 +1,8 @@
+import { loadEnvConfig } from "@next/env";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
+
+loadEnvConfig(process.cwd());
 
 const configuredPath = process.env.DATABASE_URL?.replace(/^file:/, "") ?? "./data/skyline.sqlite";
 const path = configuredPath === ":memory:" ? null : isAbsolute(configuredPath) ? configuredPath : resolve(process.cwd(), configuredPath);

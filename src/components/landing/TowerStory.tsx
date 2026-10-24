@@ -169,8 +169,8 @@ export function TowerStory() {
           <span className="scroll-cue"><ArrowDown size={15} aria-hidden="true" /> SCROLL TO EXPLORE</span>
           <span>28° 27′ N&nbsp; 77° 02′ E</span>
         </div>
+        <div className="story-progress-rail" aria-hidden="true"><span style={{ transform: `scaleY(${(activeScene + 1) / 5})` }} /></div>
       </div>
-      <div className="story-progress-rail" aria-hidden="true"><span style={{ transform: `scaleY(${(activeScene + 1) / 5})` }} /></div>
     </section>
   );
 }

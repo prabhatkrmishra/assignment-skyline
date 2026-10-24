@@ -1,6 +1,6 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, lte, or, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/lib/db/server";
 import { properties } from "@/lib/db/schema";
 import type { Property, PropertyListResult, PropertySearchParams } from "@/lib/properties/types";
 

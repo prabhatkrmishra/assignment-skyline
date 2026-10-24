@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
 interface TowerCanvasProps {
@@ -121,7 +121,6 @@ function updateCameraPath(progress: number, position: THREE.Vector3, target: THR
 export default function TowerCanvas({ scrollContainerRef, onUnsupported }: TowerCanvasProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -388,7 +387,6 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     document.addEventListener("visibilitychange", visibilityChange);
     window.addEventListener("scroll", updateProgress, { passive: true });
     updateProgress();
-    setReady(true);
 
     return () => {
       disposed = true;
@@ -412,7 +410,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
   }, [onUnsupported, scrollContainerRef]);
 
   return (
-    <div ref={rootRef} className={`tower-canvas ${ready ? "tower-canvas--ready" : ""}`} aria-hidden="true">
+    <div ref={rootRef} className="tower-canvas" aria-hidden="true">
       <canvas ref={canvasRef} className="tower-canvas__surface" />
     </div>
   );

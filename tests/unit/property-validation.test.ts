@@ -33,6 +33,10 @@ describe("enquirySchema", () => {
     expect(enquirySchema.parse(valid).email).toBeUndefined();
   });
 
+  it("rejects impossible calendar dates", () => {
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2027-02-31" }).success).toBe(false);
+  });
+
   it("rejects malformed phone numbers and short messages", () => {
     expect(enquirySchema.safeParse({ ...valid, phone: "1234567890" }).success).toBe(false);
     expect(enquirySchema.safeParse({ ...valid, message: "Hello" }).success).toBe(false);

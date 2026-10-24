@@ -1,9 +1,11 @@
-import "server-only";
+import { loadEnvConfig } from "@next/env";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "@/lib/db/schema";
+
+loadEnvConfig(process.cwd());
 
 const configuredPath = process.env.DATABASE_URL?.replace(/^file:/, "") ?? "./data/skyline.sqlite";
 const databasePath = configuredPath === ":memory:" || configuredPath.startsWith("/dev/")

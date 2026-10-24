@@ -18,9 +18,9 @@ const localities = [
 
 const archetypes = [
   { title: "The Linden Residences", type: "Apartment" as const, bhk: 2, area: 1_180, multiplier: 0.82, furnished: true, images: ["living-room.webp", "kitchen.webp", "bedroom.webp"] },
-  { title: "The Meridian Collection", type: "Apartment" as const, bhk: 3, area: 1_720, multiplier: 1.2, furnished: false, images: ["living-room.webp", "bedroom.webp", "dining-room.webp"] },
+  { title: "The Meridian Collection", type: "Apartment" as const, bhk: 3, area: 1_720, multiplier: 1.2, furnished: false, images: ["kitchen.webp", "living-room.webp", "dining-room.webp"] },
   { title: "Skyline Signature Penthouse", type: "Penthouse" as const, bhk: 4, area: 3_180, multiplier: 2.2, furnished: true, images: ["terrace.webp", "living-room.webp", "dining-room.webp"] },
-  { title: "The Garden Villa", type: "Villa" as const, bhk: 4, area: 3_650, multiplier: 2.45, furnished: false, images: ["terrace.webp", "dining-room.webp", "living-room.webp"] },
+  { title: "The Garden Villa", type: "Villa" as const, bhk: 4, area: 3_650, multiplier: 2.45, furnished: false, images: ["dining-room.webp", "terrace.webp", "living-room.webp"] },
   { title: "The Sol Studio", type: "Studio" as const, bhk: 1, area: 620, multiplier: 0.46, furnished: true, images: ["bedroom.webp", "kitchen.webp", "living-room.webp"] },
 ];
 
@@ -72,8 +72,9 @@ async function seed() {
     };
   }));
 
-  const insert = db.insert(properties);
-  for (const record of records) insert.values(record).run();
+  db.transaction((tx) => {
+    for (const record of records) tx.insert(properties).values(record).run();
+  });
   console.log(`Seeded ${records.length} fictional Skyline property records across ${localities.length} Indian localities.`);
 }
 

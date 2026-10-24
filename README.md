@@ -10,7 +10,7 @@ Project bootstrap. Implementation, automated verification, and measured performa
 
 1. Use Node.js 22 LTS (Next.js requires Node.js 20.9 or newer).
 2. Install dependencies with `npm install`.
-3. Copy `.env.example` to `.env.local` and review the values.
+3. Copy `.env.example` to `.env` and review the values.
 4. Run migrations and seed data with `npm run db:migrate && npm run db:seed`.
 5. Start with `npm run dev`.
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, Bath, BedDouble, Building2, CarFront, Check, MapPin, Ruler, ShieldCheck, Sun } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BedDouble, Building2, CarFront, Check, MapPin, Ruler, ShieldCheck, Sun } from "lucide-react";
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { EnquiryForm } from "@/components/enquiry/EnquiryForm";
