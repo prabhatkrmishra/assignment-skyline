@@ -26,10 +26,14 @@ interface PropertyCardProps {
   property: Property;
   index?: number;
   showIndex?: boolean;
+  sizes?: string;
 }
 
+/** Matches the three-up featured/similar grids; listing rows pass their own value. */
+const FEATURED_SIZES = "(max-width: 520px) 100vw, (max-width: 800px) 50vw, 30vw";
+
 /** Card displaying a single property summary in listing grids. */
-export function PropertyCard({ property, index, showIndex = false }: PropertyCardProps) {
+export function PropertyCard({ property, index, showIndex = false, sizes = FEATURED_SIZES }: PropertyCardProps) {
   const cover = property.images[0] ?? "/images/properties/living-room.webp";
   return (
     <article className="property-card" style={index === undefined ? undefined : { "--card-index": index } as CSSProperties}>
@@ -38,7 +42,7 @@ export function PropertyCard({ property, index, showIndex = false }: PropertyCar
           src={cover}
           alt={`${property.bhk} BHK ${property.propertyType.toLowerCase()} in ${property.locality}`}
           fill
-          sizes="(max-width: 620px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes={sizes}
           quality={80}
         />
         <span className="property-card__type">{property.propertyType}</span>

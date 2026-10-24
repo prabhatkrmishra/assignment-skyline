@@ -118,7 +118,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
             <>
               <div className="listing-results__meta"><span>Showing {((result.page - 1) * result.limit) + 1}–{Math.min(result.page * result.limit, result.total)} of {result.total}</span><span>Prices in Indian rupees</span></div>
               <div className="property-grid property-grid--listing">
-                {result.items.map((property, index) => <PropertyCard key={property.id} property={property} index={index} showIndex />)}
+                {result.items.map((property, index) => <PropertyCard key={property.id} property={property} index={index} showIndex sizes="(max-width: 520px) 100vw, (max-width: 800px) 50vw, (max-width: 1000px) 100vw, 44vw" />)}
               </div>
               <nav className="pagination" aria-label="Property pages">
                 <Link className={`pagination__arrow ${result.page <= 1 ? "is-disabled" : ""}`} aria-disabled={result.page <= 1} tabIndex={result.page <= 1 ? -1 : 0} href={listingPageHref(raw, result.page - 1)}><ArrowLeft size={15} aria-hidden="true" /><span>Previous</span></Link>
