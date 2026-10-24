@@ -104,8 +104,9 @@ test.describe("Skyline user journeys", () => {
     await expect(viewer).not.toBeVisible();
   });
 
-  test("shows an actual not-found page for an unknown property slug", async ({ page }) => {
-    await page.goto("/properties/this-property-does-not-exist");
+  test("returns HTTP 404 and shows the not-found page for an unknown property slug", async ({ page }) => {
+    const response = await page.goto("/properties/this-property-does-not-exist");
+    expect(response?.status()).toBe(404);
     await expect(page.getByText("404", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: /This address doesn’t exist/i })).toBeVisible();
   });
