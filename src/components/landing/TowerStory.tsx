@@ -22,14 +22,21 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
+import { AMENITIES_START, ARRIVAL_END, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
   loading: () => null,
 });
+
+// Tuning overlay, only ever downloaded for /?debug=1: scrub progress, see speed / heading / pitch live.
+const StoryDebug = dynamic(() => import("@/components/landing/StoryDebug"), { ssr: false, loading: () => null });
+
+const subscribeToLocation = () => () => {};
+const getDebugPreference = () => new URLSearchParams(window.location.search).get("debug") === "1";
+const getServerDebugPreference = () => false;
 
 const scenes = [
   {
@@ -102,7 +109,6 @@ function StaticStory() {
   );
 }
 
-/** Landing page five-scene tower story with lazy 3D canvas. */
 export function TowerStory() {
   const storyRef = useRef<HTMLElement>(null);
   const storyCopyRef = useRef<HTMLDivElement>(null);
@@ -112,6 +118,7 @@ export function TowerStory() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [lowPower, setLowPower] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
+  const debug = useSyncExternalStore(subscribeToLocation, getDebugPreference, getServerDebugPreference);
 
   const handleUnsupported = useCallback(() => setUnsupported(true), []);
 
@@ -136,15 +143,12 @@ export function TowerStory() {
     const story = storyRef.current;
     if (!story) return;
     let frame = 0;
-    const update = () => {
-      frame = 0;
-      const rect = story.getBoundingClientRect();
-      const range = Math.max(1, story.offsetHeight - window.innerHeight);
-      const progress = Math.min(1, Math.max(0, -rect.top / range));
+    let lastCanvasEvent = Number.NEGATIVE_INFINITY;
+    const apply = (progress: number) => {
       const nextScene = sceneIndexAtProgress(progress);
       // Keep the arrival headline visible on first paint, then finish its fade from scroll progress.
       if (storyCopyRef.current) {
-        const arrivalFade = 0.72 + 0.28 * Math.min(1, Math.max(0, progress / 0.055));
+        const arrivalFade = 0.72 + 0.28 * Math.min(1, Math.max(0, progress / (ARRIVAL_END * 0.37)));
         storyCopyRef.current.style.opacity = String(nextScene === 0 ? arrivalFade : 1);
       }
       setActiveScene((current) => current === nextScene ? current : nextScene);
@@ -153,11 +157,26 @@ export function TowerStory() {
         setActiveAmenity((current) => current === nextAmenity ? current : nextAmenity);
       }
     };
+    // Before WebGL loads (or when it is off-screen) copy follows raw scroll. Once the canvas is running it
+    // publishes the spring-smoothed progress, so text and 3D change scene on exactly the same frame.
+    const update = () => {
+      frame = 0;
+      if (performance.now() - lastCanvasEvent < 250) return;
+      const rect = story.getBoundingClientRect();
+      const range = Math.max(1, story.offsetHeight - window.innerHeight);
+      apply(Math.min(1, Math.max(0, -rect.top / range)));
+    };
+    const onCanvasProgress = (event: Event) => {
+      lastCanvasEvent = performance.now();
+      apply((event as CustomEvent<number>).detail);
+    };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
     update();
+    story.addEventListener("skyline-progress", onCanvasProgress);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
     return () => {
+      story.removeEventListener("skyline-progress", onCanvasProgress);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (frame) window.cancelAnimationFrame(frame);
@@ -187,13 +206,14 @@ export function TowerStory() {
   }
 
   return (
-    <section ref={storyRef} className="story-shell" aria-label="The Skyline story">
+    <section ref={storyRef} className="story-shell" style={{ "--story-height-vh": STORY_SHELL_HEIGHT_VH } as CSSProperties} aria-label="The Skyline story">
       <div className="story-stage">
         <div className="story-stage__poster-frame">
           <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill priority sizes="100vw" quality={85} />
         </div>
         <div className="story-stage__wash" aria-hidden="true" />
         {shouldLoad ? <LazyTowerCanvas scrollContainerRef={storyRef} onUnsupported={handleUnsupported} /> : null}
+        <div className="story-stage__scrim" aria-hidden="true" />
         <div className="story-stage__grain" aria-hidden="true" />
         <div className="story-scene-count" aria-hidden="true"><span>0{activeScene + 1}</span><i /><span>05</span></div>
 
@@ -210,6 +230,7 @@ export function TowerStory() {
           <span className="scroll-cue"><ArrowDown size={15} aria-hidden="true" /> SCROLL TO EXPLORE</span>
           <span>28° 27′ N&nbsp; 77° 02′ E</span>
         </div>
+        {debug ? <StoryDebug storyRef={storyRef} /> : null}
         <div className="story-progress-rail" aria-hidden="true"><span style={{ transform: `scaleY(${(activeScene + 1) / 5})` }} /></div>
       </div>
     </section>

@@ -24,7 +24,14 @@ import { applyCameraRig } from "@/components/three/CameraRig";
 import { mountRoomLabels, unmountRoomLabels, updateRoomLabels } from "@/components/three/Labels";
 import { createTowerScene, disposeTowerScene } from "@/components/three/TowerScene";
 import { applyTowerScrollProgress } from "@/components/three/TowerChoreography";
-import { FLOOR_COUNT, HERO_FLOOR_NUMBER, INTERIOR_END, INTERIOR_START, clamp01 } from "@/lib/scroll/timeline";
+import { createSpring, isSettled, smoothDamp } from "@/lib/scroll/spring";
+import { AMENITIES_START, FLOOR_COUNT, HERO_FLOOR_NUMBER, INTERIOR_START, clamp01 } from "@/lib/scroll/timeline";
+
+/** Seconds for the camera to catch up with scroll. ~0.5 feels heavy and calm; lower is snappier. */
+const PROGRESS_SMOOTH_TIME = 0.55;
+/** Progress units per second; a full-page scrollbar jump takes at least ~1.2 s to play out. */
+const PROGRESS_MAX_SPEED = 0.85;
+const POINTER_SMOOTH_TIME = 0.6;
 
 interface TowerCanvasProps {
   scrollContainerRef: RefObject<HTMLElement | null>;
@@ -95,10 +102,19 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     const pointerNdc = new THREE.Vector2(2, 2);
     const pointerTarget = new THREE.Vector2();
     const pointerCurrent = new THREE.Vector2();
+    const pointerSpringX = createSpring();
+    const pointerSpringY = createSpring();
+    const progressSpring = createSpring();
     const labelWidth = () => root.clientWidth;
     const labelHeight = () => root.clientHeight;
 
+    // `scrollProgress` is the raw target read from the page; `shownProgress` eases toward it so fast
+    // flicks or direction reversals glide instead of jumping. Both are pure progress values: every
+    // scene transform is still derived from `shownProgress` alone, never from elapsed time.
     let scrollProgress = 0;
+    let shownProgress = 0;
+    let revealed = false;
+    let publishedProgress = -1;
     let pointerInside = false;
     let intersecting = false;
     let documentVisible = document.visibilityState === "visible";
@@ -137,7 +153,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     };
 
     const updateSlabHover = () => {
-      const inInterior = scrollProgress >= INTERIOR_START && scrollProgress < INTERIOR_END;
+      const inInterior = shownProgress >= INTERIOR_START && shownProgress < AMENITIES_START;
       if (!pointerInside || inInterior) {
         restoreSlabHighlight();
         return;
@@ -163,19 +179,41 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       const delta = lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0.016;
       lastTime = time;
       updateProgress();
+      // A critically damped spring keeps its velocity between wheel notches, so steps blend into one glide.
+      // smoothTime is the "weight" of the camera; maxSpeed makes a scrollbar jump travel instead of whip.
+      if (isSettled(progressSpring, scrollProgress)) {
+        progressSpring.value = scrollProgress;
+        progressSpring.velocity = 0;
+      } else {
+        smoothDamp(progressSpring, scrollProgress, PROGRESS_SMOOTH_TIME, delta, PROGRESS_MAX_SPEED);
+      }
+      shownProgress = progressSpring.value;
+      // Keep the DOM copy in lock-step with what the 3D is actually showing.
+      if (Math.abs(shownProgress - publishedProgress) > 1e-5) {
+        publishedProgress = shownProgress;
+        story.dispatchEvent(new CustomEvent<number>("skyline-progress", { detail: shownProgress }));
+      }
 
-      // Floor assembly and the single hero facade are a pure function of scroll progress.
-      applyTowerScrollProgress(floors, scrollProgress);
+      // Floor assembly, dollhouse lift and the single hero facade are pure functions of progress.
+      applyTowerScrollProgress(floors, shownProgress, world.rooftop);
 
       // The scroll timeline writes camera position directly. Only pointer parallax is damped.
-      pointerCurrent.lerp(pointerTarget, 1 - Math.exp(-delta * 3.8));
-      applyCameraRig(camera, scrollProgress, { x: pointerCurrent.x, y: pointerCurrent.y });
+      pointerCurrent.set(
+        smoothDamp(pointerSpringX, pointerTarget.x, POINTER_SMOOTH_TIME, delta),
+        smoothDamp(pointerSpringY, pointerTarget.y, POINTER_SMOOTH_TIME, delta),
+      );
+      applyCameraRig(camera, shownProgress, { x: pointerCurrent.x, y: pointerCurrent.y });
       // Labels and slab raycasts must use this frame's matrices, not the last rendered frame.
       camera.updateMatrixWorld(true);
       scene.updateMatrixWorld(true);
-      updateRoomLabels(projectedLabels, camera, scrollProgress, labelWidth(), labelHeight());
+      updateRoomLabels(projectedLabels, camera, shownProgress, labelWidth(), labelHeight());
       updateSlabHover();
       renderer.render(scene, camera);
+      // Fade the opaque 3D in over the poster only after a real frame exists, so there is never a blank flash.
+      if (!revealed) {
+        revealed = true;
+        root.dataset.ready = "true";
+      }
     };
 
     const startRenderLoop = () => {
@@ -221,6 +259,8 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     root.addEventListener("pointerleave", onPointerLeave, { passive: true });
     document.addEventListener("visibilitychange", visibilityChange);
     updateProgress();
+    shownProgress = scrollProgress;
+    progressSpring.value = scrollProgress;
 
     return () => {
       disposed = true;
