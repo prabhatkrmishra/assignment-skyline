@@ -244,7 +244,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       intersecting = Boolean(entry?.isIntersecting);
       if (intersecting) startRenderLoop();
       else stopRenderLoop();
-    }, { rootMargin: "120px 0px", threshold: 0.01 });
+    }, { rootMargin: "0px", threshold: 0.01 });
     intersection.observe(root);
 
     const resizeObserver = new ResizeObserver(() => {

@@ -20,12 +20,58 @@ function validEnquiryPayload(propertySlug: string) {
 }
 
 test.describe("Skyline user journeys", () => {
-  test("loads the landing story and six featured homes", async ({ page }) => {
+  test("loads the landing page in order: hero, 3D story, philosophy, featured homes", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: /A new perspective on home/i })).toBeVisible();
+    // 1. Hero comes first and carries the page's only h1; the full sentence is available immediately.
+    await expect(page.getByRole("heading", { level: 1, name: "Room to breathe. Space to become." })).toBeAttached();
+    await expect(page.getByRole("link", { name: /Find your home/i }).first()).toBeVisible();
+    await expect(page.locator(".typing-headline__live")).toHaveText(/Room to breathe\.\s*Space to become\./, { timeout: 10_000 });
+
+    // 2 and 3. Document order is hero → tower story → philosophy.
+    const order = await page.evaluate(() => {
+      const index = (selector: string) => {
+        const node = document.querySelector(selector);
+        return node ? Array.from(node.parentElement!.children).indexOf(node) : -1;
+      };
+      return [index(".hero"), index("#tower"), index("#philosophy")];
+    });
+    expect(order[0]).toBeGreaterThanOrEqual(0);
+    expect(order[1]).toBe(order[0] + 1);
+    expect(order[2]).toBe(order[1] + 1);
+
+    await expect(page.getByRole("heading", { name: /A new perspective on home/i })).toBeAttached();
+    await expect(page.getByRole("heading", { name: /Luxury isn’t more\.\s*It’s more considered\./i })).toBeAttached();
     await expect(page.getByRole("heading", { name: /Find your point of view/i })).toBeVisible();
     await expect(page.locator(".property-grid--featured .property-card")).toHaveCount(6);
+  });
+
+  test("keeps the 3D canvas out of the hero and starts it when the story is reached", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".hero")).toBeVisible();
+    // Nothing from the 3D story is mounted while the visitor is still reading the hero.
+    await expect(page.locator("#tower canvas")).toHaveCount(0);
+
+    await page.locator("#tower").scrollIntoViewIfNeeded();
+    await page.mouse.wheel(0, 400);
+    await expect(page.locator("#tower canvas")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("skip animation jumps from the 3D story to the philosophy section and scrolling back stays reversible", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#tower").scrollIntoViewIfNeeded();
+
+    const skip = page.getByRole("button", { name: "Skip animation" });
+    await expect(skip).toBeVisible();
+    await skip.click();
+
+    await expect(page.locator("#philosophy")).toBeInViewport({ ratio: 0.2 });
+    await expect(page.locator("#philosophy")).toBeFocused();
+    await expect(page.getByRole("heading", { name: /Luxury isn’t more/i })).toBeVisible();
+
+    // Reversible: scrolling back up returns into the story, where the skip control is available again.
+    await page.evaluate(() => window.scrollBy({ top: -window.innerHeight * 1.5, behavior: "instant" }));
+    await expect(skip).toBeVisible();
   });
 
   test("restores listing filters and pagination through URL navigation", async ({ page }) => {
@@ -174,5 +220,10 @@ test.describe("Skyline user journeys", () => {
     await expect(page.getByText("Showing a still-image experience because reduced motion is enabled.")).toBeVisible();
     await expect(page.locator("canvas")).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Explore homes/i }).last()).toBeVisible();
+    // The hero shows the finished headline straight away instead of typing it.
+    await expect(page.locator(".typing-headline__ghost")).toBeVisible();
+    await expect(page.locator(".typing-headline__live")).toBeHidden();
+    // The skip control is still offered over the still-image story.
+    await expect(page.getByRole("button", { name: "Skip animation" })).toBeVisible();
   });
 });

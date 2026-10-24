@@ -23,7 +23,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { ArrowDown, ArrowUpRight, ChevronsDown } from "lucide-react";
 import { AMENITIES_START, ARRIVAL_END, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
@@ -77,6 +77,32 @@ const amenitySlides = [
   { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN" },
 ];
 
+/** id of the philosophy section that follows the animation; the skip button jumps here. */
+const SKIP_TARGET_ID = "philosophy";
+/**
+ * The 3D chunk is only requested once the hero has had a moment to play (or the visitor starts to scroll),
+ * so the typing headline never competes with WebGL start-up for the main thread.
+ */
+const HERO_SETTLE_MS = 3200;
+
+/** Jumps past the cinematic section to the philosophy section and moves keyboard focus with the view. */
+function skipAnimation() {
+  const target = document.getElementById(SKIP_TARGET_ID);
+  if (!target) return;
+  // scrollIntoView honours the sticky header via scroll-padding-top; "instant" avoids replaying the whole story.
+  target.scrollIntoView({ block: "start", behavior: "instant" });
+  target.focus({ preventScroll: true });
+}
+
+function SkipButton() {
+  return (
+    <button type="button" className="story-skip" onClick={skipAnimation}>
+      <span>Skip animation</span>
+      <ChevronsDown size={16} strokeWidth={1.6} aria-hidden="true" />
+    </button>
+  );
+}
+
 const STATIC_SCENE_IMAGES = [
   "/images/landing/tower-poster.webp",
   "/images/landing/tower-poster.webp",
@@ -88,6 +114,7 @@ const STATIC_SCENE_IMAGES = [
 function StaticStory() {
   return (
     <div className="story-static-scenes">
+      <SkipButton />
       {scenes.map((scene, index) => {
         const image = STATIC_SCENE_IMAGES[index];
         return (
@@ -115,6 +142,7 @@ export function TowerStory() {
   const [activeScene, setActiveScene] = useState(0);
   const [activeAmenity, setActiveAmenity] = useState(0);
   const [shouldLoad, setShouldLoad] = useState(false);
+  const [armed, setArmed] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [lowPower, setLowPower] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
@@ -183,9 +211,26 @@ export function TowerStory() {
     };
   }, []);
 
+  // Arm the lazy 3D load: on the first scroll, immediately when the page opens part-way down (reload, deep link),
+  // or once the hero has settled. Until then the hero is the only thing the browser works on.
+  useEffect(() => {
+    if (reducedMotion || lowPower || unsupported) return;
+    const arm = () => setArmed(true);
+    if (window.scrollY > 0) {
+      arm();
+      return;
+    }
+    window.addEventListener("scroll", arm, { once: true, passive: true });
+    const timer = window.setTimeout(arm, HERO_SETTLE_MS);
+    return () => {
+      window.removeEventListener("scroll", arm);
+      window.clearTimeout(timer);
+    };
+  }, [lowPower, reducedMotion, unsupported]);
+
   useEffect(() => {
     const story = storyRef.current;
-    if (!story || reducedMotion || lowPower || unsupported) return;
+    if (!story || !armed || reducedMotion || lowPower || unsupported) return;
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry?.isIntersecting) return;
       setShouldLoad(true);
@@ -193,12 +238,12 @@ export function TowerStory() {
     }, { rootMargin: "160px 0px", threshold: 0.01 });
     observer.observe(story);
     return () => observer.disconnect();
-  }, [lowPower, reducedMotion, unsupported]);
+  }, [armed, lowPower, reducedMotion, unsupported]);
 
   const staticFallback = reducedMotion || lowPower || unsupported;
   if (staticFallback) {
     return (
-      <section className="story-shell story-shell--static" aria-label="The Skyline story">
+      <section id="tower" className="story-shell story-shell--static" aria-label="The Skyline story">
         {reducedMotion ? <p className="motion-note page-gutter">Showing a still-image experience because reduced motion is enabled.</p> : null}
         <StaticStory />
       </section>
@@ -206,20 +251,21 @@ export function TowerStory() {
   }
 
   return (
-    <section ref={storyRef} className="story-shell" style={{ "--story-height-vh": STORY_SHELL_HEIGHT_VH } as CSSProperties} aria-label="The Skyline story">
+    <section id="tower" ref={storyRef} className="story-shell" style={{ "--story-height-vh": STORY_SHELL_HEIGHT_VH } as CSSProperties} aria-label="The Skyline story">
       <div className="story-stage">
         <div className="story-stage__poster-frame">
-          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill priority sizes="100vw" quality={85} />
+          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill sizes="100vw" quality={85} />
         </div>
         <div className="story-stage__wash" aria-hidden="true" />
         {shouldLoad ? <LazyTowerCanvas scrollContainerRef={storyRef} onUnsupported={handleUnsupported} /> : null}
         <div className="story-stage__scrim" aria-hidden="true" />
         <div className="story-stage__grain" aria-hidden="true" />
+        <SkipButton />
         <div className="story-scene-count" aria-hidden="true"><span>0{activeScene + 1}</span><i /><span>05</span></div>
 
         <div ref={storyCopyRef} className={`story-copy page-gutter story-copy--scene-${activeScene}`} aria-live="polite" aria-atomic="true">
           <span className="eyebrow eyebrow--light">{activeScene === 3 && activeAmenity >= 0 ? `04 / AMENITIES — ${String(activeAmenity + 1).padStart(2, "0")}` : scenes[activeScene].eyebrow}</span>
-          {activeScene === 3 && activeAmenity >= 0 ? <h1>{amenitySlides[activeAmenity].headline}</h1> : <h1>{scenes[activeScene].title}</h1>}
+          {activeScene === 3 && activeAmenity >= 0 ? <h2>{amenitySlides[activeAmenity].headline}</h2> : <h2>{scenes[activeScene].title}</h2>}
           <p>{activeScene === 3 && activeAmenity >= 0 ? amenitySlides[activeAmenity].description : scenes[activeScene].body}</p>
           <span className="story-copy__tag">{activeScene === 3 && activeAmenity >= 0 ? amenitySlides[activeAmenity].tag : scenes[activeScene].tag}</span>
           {activeScene === 4 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
