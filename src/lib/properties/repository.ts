@@ -53,7 +53,7 @@ export function getPropertyBySlug(slug: string): Property | null {
 export function getSimilarPropertiesFor(current: Pick<Property, "slug" | "locality" | "bhk">): Property[] {
   return db.select().from(properties)
     .where(and(
-      sql`${properties.slug} <> ${slug}`,
+      sql`${properties.slug} <> ${current.slug}`,
       or(eq(properties.locality, current.locality), eq(properties.bhk, current.bhk)),
     ))
     .orderBy(
