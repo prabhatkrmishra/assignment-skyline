@@ -20,7 +20,7 @@ import {
   initialFloorOffset,
   roomLabelProgress,
 } from "@/lib/scroll/timeline";
-import { updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
+import { getCameraPose, updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
 
 interface VectorStub {
   x: number;
@@ -158,5 +158,39 @@ describe("24-floor scene choreography", () => {
     expect(roomLabelProgress(0.44, 0.45)).toBe(0);
     expect(roomLabelProgress(0.49, 0.45)).toBeGreaterThan(0.9);
     expect(roomLabelProgress(INTERIOR_END, 0.45)).toBe(0);
+  });
+});
+
+
+describe("camera choreography", () => {
+  it("orbits the stationary tower by approximately 40–60 degrees during Arrival", () => {
+    const start = getCameraPose(0);
+    const end = getCameraPose(BUILD_START);
+    const startAngle = Math.atan2(start.position[0], start.position[2]) * 180 / Math.PI;
+    const endAngle = Math.atan2(end.position[0], end.position[2]) * 180 / Math.PI;
+    const delta = Math.abs(startAngle - endAngle);
+    expect(delta).toBeGreaterThanOrEqual(40);
+    expect(delta).toBeLessThanOrEqual(60);
+  });
+
+  it("hits each Catmull-Rom amenity stop exactly at its named progress boundary", () => {
+    expect(getCameraPose(AMENITIES_START).position).toEqual(getCameraPose(INTERIOR_END).position);
+    expect(getCameraPose(GYM_STOP_START).position).toEqual([31, 14.5, 26]);
+    expect(getCameraPose(GARDEN_STOP_START).position).toEqual([-31, 11, 14]);
+    expect(getCameraPose(CTA_START).position).toEqual([25, 12, -32]);
+  });
+
+  it("has continuous poses at scene boundaries and is deterministic when reversed", () => {
+    for (const boundary of [BUILD_START, BUILD_END, INTERIOR_END, GYM_STOP_START, GARDEN_STOP_START, CTA_START]) {
+      const before = getCameraPose(boundary - 1e-7);
+      const at = getCameraPose(boundary);
+      const distance = Math.hypot(
+        before.position[0] - at.position[0],
+        before.position[1] - at.position[1],
+        before.position[2] - at.position[2],
+      );
+      expect(distance).toBeLessThan(0.001);
+      expect(getCameraPose(boundary - 0.013)).toEqual(getCameraPose(boundary - 0.013));
+    }
   });
 });
