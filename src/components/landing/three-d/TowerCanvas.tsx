@@ -2,6 +2,18 @@
 
 import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
+import { createFloor } from "@/components/landing/three-d/TowerGeometry";
+import {
+  BUILD_END,
+  BUILD_START,
+  FLOOR_COUNT,
+  FLOOR_SPACING,
+  INTERIOR_END,
+  INTERIOR_START,
+  clamp01,
+  segmentProgress,
+  updateCameraPath,
+} from "@/components/landing/three-d/ScrollTimeline";
 
 interface TowerCanvasProps {
   scrollContainerRef: RefObject<HTMLElement | null>;
@@ -20,102 +32,6 @@ interface ProjectedLabel {
   visibleFrom: number;
   visibleUntil: number;
   projected: THREE.Vector3;
-}
-
-const FLOOR_COUNT = 18;
-const FLOOR_SPACING = 0.43;
-const BUILD_START = 0.18;
-const BUILD_END = 0.4;
-const INTERIOR_START = 0.4;
-const INTERIOR_END = 0.6;
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-const smooth = (value: number) => {
-  const t = clamp01(value);
-  return t * t * (3 - 2 * t);
-};
-const segmentProgress = (value: number, start: number, end: number) => smooth((value - start) / (end - start));
-
-function createFloor(
-  index: number,
-  slabMaterial: THREE.Material,
-  glassMaterial: THREE.Material,
-  railMaterial: THREE.Material,
-  accentMaterial: THREE.Material,
-): THREE.Group {
-  const floor = new THREE.Group();
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.075, 2.15), slabMaterial);
-  slab.position.y = -0.05;
-  slab.castShadow = index % 3 === 0;
-  slab.receiveShadow = true;
-  floor.add(slab);
-
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.31, 0.035), glassMaterial);
-  glass.position.set(0, 0.12, 1.01);
-  floor.add(glass);
-
-  const sideGlassLeft = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.31, 1.8), glassMaterial);
-  sideGlassLeft.position.set(-1.34, 0.12, 0);
-  floor.add(sideGlassLeft);
-  const sideGlassRight = sideGlassLeft.clone();
-  sideGlassRight.position.x = 1.34;
-  floor.add(sideGlassRight);
-
-  const balcony = new THREE.Mesh(new THREE.BoxGeometry(2.98, 0.055, 0.55), slabMaterial);
-  balcony.position.set(0, -0.02, 1.27);
-  balcony.castShadow = index % 4 === 0;
-  balcony.receiveShadow = true;
-  floor.add(balcony);
-
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(2.82, 0.025, 0.025), railMaterial);
-  rail.position.set(0, 0.22, 1.52);
-  floor.add(rail);
-  for (const side of [-1, 1]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.24, 0.025), railMaterial);
-    post.position.set(side * 1.39, 0.1, 1.52);
-    floor.add(post);
-  }
-
-  const verticalFin = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.37, 0.095), accentMaterial);
-  for (const x of [-1.22, 1.22]) {
-    for (const z of [-0.83, 0.83]) {
-      const column = verticalFin.clone();
-      column.position.set(x, 0.11, z);
-      floor.add(column);
-    }
-  }
-
-  const windowDivider = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.29, 0.045), railMaterial);
-  for (const x of [-0.78, 0, 0.78]) {
-    const divider = windowDivider.clone();
-    divider.position.set(x, 0.12, 1.03);
-    floor.add(divider);
-  }
-
-  return floor;
-}
-
-const CAMERA_KEYFRAMES = [
-  { t: 0, position: new THREE.Vector3(11, 8.2, 14), target: new THREE.Vector3(0, 3.9, 0) },
-  { t: 0.18, position: new THREE.Vector3(9.4, 7.1, 13), target: new THREE.Vector3(0, 4, 0) },
-  { t: 0.4, position: new THREE.Vector3(8.7, 6.8, 12), target: new THREE.Vector3(0, 4, 0) },
-  { t: 0.49, position: new THREE.Vector3(3.1, 3.4, 4.8), target: new THREE.Vector3(0, 3.8, 0.25) },
-  { t: 0.6, position: new THREE.Vector3(4.2, 3.6, 4.4), target: new THREE.Vector3(0, 3.3, 0) },
-  { t: 0.635, position: new THREE.Vector3(7.6, 4.5, 8), target: new THREE.Vector3(5.5, 0.3, 1.3) },
-  { t: 0.72, position: new THREE.Vector3(-7.3, 3.4, 7), target: new THREE.Vector3(-5.2, 0.8, -3.2) },
-  { t: 0.8, position: new THREE.Vector3(7.8, 3.5, -7.8), target: new THREE.Vector3(4.8, 0.6, -5.2) },
-  { t: 0.86, position: new THREE.Vector3(8.6, 6.6, 12.7), target: new THREE.Vector3(0, 4, 0) },
-  { t: 1, position: new THREE.Vector3(10.5, 7.8, 13.8), target: new THREE.Vector3(0, 4, 0) },
-];
-
-function updateCameraPath(progress: number, position: THREE.Vector3, target: THREE.Vector3) {
-  let nextIndex = CAMERA_KEYFRAMES.findIndex((frame) => frame.t >= progress);
-  if (nextIndex < 1) nextIndex = 1;
-  const previous = CAMERA_KEYFRAMES[nextIndex - 1];
-  const next = CAMERA_KEYFRAMES[Math.min(nextIndex, CAMERA_KEYFRAMES.length - 1)];
-  const t = smooth((progress - previous.t) / Math.max(0.0001, next.t - previous.t));
-  position.copy(previous.position).lerp(next.position, t);
-  target.copy(previous.target).lerp(next.target, t);
 }
 
 export default function TowerCanvas({ scrollContainerRef, onUnsupported }: TowerCanvasProps) {
