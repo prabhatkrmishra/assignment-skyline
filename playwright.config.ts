@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3100",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -18,9 +18,14 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "npm run dev",
-        url: "http://127.0.0.1:3000",
-        reuseExistingServer: !process.env.CI,
+        command: "npm run db:migrate && npm run db:seed && npm run dev -- --port 3100",
+        url: "http://127.0.0.1:3100",
+        reuseExistingServer: false,
         timeout: 120_000,
+        env: {
+          DATABASE_URL: "file:./data/skyline-e2e.sqlite",
+          NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:3100",
+          RATE_LIMIT_SALT: "skyline-playwright-only-rate-limit-salt",
+        },
       },
 });
