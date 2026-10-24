@@ -17,3 +17,6 @@ reports/generated/
 *.db
 *.db-shm
 *.db-wal
+
+# TypeScript incremental build cache
+*.tsbuildinfo
