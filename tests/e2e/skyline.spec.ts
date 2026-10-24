@@ -46,6 +46,20 @@ test.describe("Skyline user journeys", () => {
     await expect(page.locator("#filter-bhk")).toHaveValue("");
   });
 
+  test("searches by a seeded locality and keeps the query in the URL", async ({ page, request }) => {
+    const response = await request.get("/api/properties?limit=1");
+    expect(response.ok()).toBeTruthy();
+    const payload = await response.json() as { items: Array<{ locality: string }> };
+    const locality = payload.items[0]?.locality;
+    expect(locality).toBeTruthy();
+
+    await page.goto("/properties");
+    await page.getByRole("searchbox", { name: "Search by name or locality" }).fill(locality!);
+    await expect(page).toHaveURL(/(?:\?|&)q=/);
+    await expect(page.locator("#property-search")).toHaveValue(locality!);
+    await expect(page.locator(".property-grid--listing .property-card").first()).toContainText(locality!);
+  });
+
   test("rejects duplicate page filters and clamps pages beyond the result set", async ({ page }) => {
     await page.goto("/properties?bhk=1&bhk=4");
     await expect(page.getByText("Some filters in this link were not valid.")).toBeVisible();

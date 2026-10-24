@@ -105,7 +105,7 @@ export function PropertyFilters() {
       <div className="filters-panel__mobile-heading"><SlidersHorizontal size={17} aria-hidden="true" /> Refine your search</div>
       <div className="filter-field">
         <label htmlFor="property-search">Search by name or locality</label>
-        <input id="property-search" type="search" autoComplete="off" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Try ‘Bandra’ or ‘garden’" />
+        <input id="property-search" type="search" autoComplete="off" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Try a locality or home name" />
       </div>
 
       <fieldset className="filter-fieldset">
