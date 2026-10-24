@@ -63,6 +63,11 @@ test.describe("Skyline user journeys", () => {
     const unknownFilter = await request.get("/api/properties?sort=unknown");
     expect(unknownFilter.status()).toBe(400);
 
+    const emptyPrice = await request.get("/api/properties?minPrice=");
+    expect(emptyPrice.status()).toBe(400);
+    const scientificPrice = await request.get("/api/properties?maxPrice=1e7");
+    expect(scientificPrice.status()).toBe(400);
+
     const duplicateFilter = await request.get("/api/properties?bhk=2&bhk=3");
     expect(duplicateFilter.status()).toBe(400);
     expect(await duplicateFilter.json()).toMatchObject({ details: { bhk: ["Provide each query parameter only once"] } });

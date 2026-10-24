@@ -7,17 +7,22 @@ import { getTodayInIndia, isCalendarDate } from "@/lib/properties/date";
 export { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 export type { PropertySort, PropertyType } from "@/lib/properties/options";
 
+const integerQueryParam = (minimum: number, maximum: number) => z.string()
+  .regex(/^\d+$/, "Enter a whole-number query value")
+  .transform(Number)
+  .pipe(z.number().int().min(minimum).max(maximum));
+
 export const propertySearchSchema = z.strictObject({
     q: z.string().trim().max(80, "Search must be 80 characters or fewer").optional().default(""),
-    minPrice: z.coerce.number().int().min(0).optional(),
-    maxPrice: z.coerce.number().int().min(0).optional(),
-    bhk: z.coerce.number().int().min(1).max(4).optional(),
+    minPrice: integerQueryParam(0, Number.MAX_SAFE_INTEGER).optional(),
+    maxPrice: integerQueryParam(0, Number.MAX_SAFE_INTEGER).optional(),
+    bhk: integerQueryParam(1, 4).optional(),
     type: z.enum(propertyTypes).optional(),
     furnished: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
     featured: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
     sort: z.enum(propertySortOptions).optional().default("newest"),
-    page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
-    limit: z.coerce.number().int().min(1).max(24).optional().default(12),
+    page: integerQueryParam(1, 10_000).optional().default(1),
+    limit: integerQueryParam(1, 24).optional().default(12),
   })
   .superRefine((value, context) => {
     if (value.minPrice !== undefined && value.maxPrice !== undefined && value.minPrice > value.maxPrice) {

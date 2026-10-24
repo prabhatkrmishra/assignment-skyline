@@ -13,8 +13,11 @@ describe("propertySearchSchema", () => {
     });
   });
 
-  it("rejects invalid limits, contradictory ranges, and unknown parameters", () => {
+  it("rejects invalid numbers, contradictory ranges, and unknown parameters", () => {
     expect(propertySearchSchema.safeParse({ limit: "25" }).success).toBe(false);
+    expect(propertySearchSchema.safeParse({ minPrice: "" }).success).toBe(false);
+    expect(propertySearchSchema.safeParse({ minPrice: "1.5" }).success).toBe(false);
+    expect(propertySearchSchema.safeParse({ minPrice: "1e6" }).success).toBe(false);
     expect(propertySearchSchema.safeParse({ minPrice: "9000000", maxPrice: "1000000" }).success).toBe(false);
     expect(propertySearchSchema.safeParse({ unknownFilter: "anything" }).success).toBe(false);
   });
