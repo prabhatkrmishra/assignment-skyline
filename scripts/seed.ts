@@ -67,7 +67,7 @@ async function seed() {
       description: `${archetype.title} pairs considered architecture with generous natural light, warm finishes and a calm, contemporary plan. Set in ${location.locality}, ${location.city}, the residence is designed for everyday comfort with thoughtfully selected shared amenities and convenient access to the neighbourhood.`,
       amenities: amenitySets[archetypeIndex],
       images,
-      featured: index < 6 || index % 7 === 0,
+      featured: [0, 1, 2, 3, 4, 5].includes(index) || index % 7 === 0,
       createdAt: createdAt(index),
     };
   }));

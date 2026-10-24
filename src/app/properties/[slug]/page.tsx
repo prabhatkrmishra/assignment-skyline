@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowUpRight, BedDouble, Building2, CarFront, Check, MapPin,
 import { PropertyGallery } from "@/components/properties/PropertyGallery";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { EnquiryForm } from "@/components/enquiry/EnquiryForm";
-import { getPropertyBySlug, getSimilarProperties } from "@/lib/properties/repository";
+import { getPropertyBySlug, getSimilarPropertiesFor } from "@/lib/properties/repository";
 import { formatArea, formatPrice } from "@/lib/properties/format";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export default async function PropertyDetailPage({ params }: RouteContext) {
   const { slug } = await params;
   const property = getPropertyBySlug(slug);
   if (!property) notFound();
-  const similar = getSimilarProperties(slug);
+  const similar = getSimilarPropertiesFor(property);
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.locality}, ${property.city}, ${property.state}, India`)}`;
   const specs = [
     { icon: BedDouble, value: `${property.bhk} BHK`, label: "BEDROOMS" },

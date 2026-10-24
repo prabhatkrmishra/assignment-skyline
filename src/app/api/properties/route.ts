@@ -18,7 +18,7 @@ export function GET(request: NextRequest) {
 
   try {
     const result = listProperties(parsed.data);
-    return NextResponse.json(result, {
+    return NextResponse.json({ items: result.items, total: result.total, page: result.page, hasMore: result.hasMore }, {
       headers: { "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=300" },
     });
   } catch (error) {

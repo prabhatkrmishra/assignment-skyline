@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { InferSelectModel } from "drizzle-orm";
+import type { properties } from "@/lib/db/schema";
 
 export const propertyTypes = ["Apartment", "Penthouse", "Villa", "Studio"] as const;
 export type PropertyType = (typeof propertyTypes)[number];
@@ -43,27 +45,8 @@ export const enquirySchema = z.object({
 
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 
-export interface Property {
-  id: number;
-  slug: string;
-  title: string;
-  locality: string;
-  city: string;
-  state: string;
-  price: number;
-  bhk: number;
-  propertyType: PropertyType;
-  furnished: boolean;
-  areaSqft: number;
-  floor: number;
-  totalFloors: number;
-  parking: number;
-  description: string;
-  amenities: string[];
-  images: string[];
-  featured: boolean;
-  createdAt: string;
-}
+/** The database schema is the single source of truth for the shared Property type. */
+export type Property = InferSelectModel<typeof properties>;
 
 export interface PropertyListResult {
   items: Property[];
@@ -72,3 +55,5 @@ export interface PropertyListResult {
   limit: number;
   hasMore: boolean;
 }
+
+export type PropertyApiResponse = Pick<PropertyListResult, "items" | "total" | "page" | "hasMore">;

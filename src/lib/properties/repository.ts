@@ -50,15 +50,7 @@ export function getPropertyBySlug(slug: string): Property | null {
   return (property as Property | undefined) ?? null;
 }
 
-export function getFeaturedProperties(): Property[] {
-  return db.select().from(properties).where(eq(properties.featured, true))
-    .orderBy(desc(properties.createdAt), asc(properties.id)).limit(6).all() as Property[];
-}
-
-export function getSimilarProperties(slug: string): Property[] {
-  const current = getPropertyBySlug(slug);
-  if (!current) return [];
-
+export function getSimilarPropertiesFor(current: Pick<Property, "slug" | "locality" | "bhk">): Property[] {
   return db.select().from(properties)
     .where(and(
       sql`${properties.slug} <> ${slug}`,
