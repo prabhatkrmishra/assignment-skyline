@@ -69,7 +69,11 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       return;
     }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    // DPR is capped at 1.5 and steps down toward 1 if the device cannot hold the frame budget (see render loop).
+    let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+    let frameTimeSum = 0;
+    let frameTimeCount = 0;
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(Math.max(1, root.clientWidth), Math.max(1, root.clientHeight), false);
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -177,6 +181,21 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       }
       frameId = window.requestAnimationFrame(render);
       const delta = lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0.016;
+      // Adaptive quality: average the real frame time over ~1.5 s; a sustained miss of 60 fps (well past 24 ms)
+      // lowers the pixel ratio one step (never below 1). Long gaps (tab switches, off-screen) are ignored.
+      if (lastTime && time - lastTime < 250) {
+        frameTimeSum += time - lastTime;
+        frameTimeCount += 1;
+        if (frameTimeCount >= 90) {
+          if (frameTimeSum / frameTimeCount > 24 && pixelRatio > 1) {
+            pixelRatio = Math.max(1, pixelRatio - 0.25);
+            renderer.setPixelRatio(pixelRatio);
+            renderer.setSize(Math.max(1, root.clientWidth), Math.max(1, root.clientHeight), false);
+          }
+          frameTimeSum = 0;
+          frameTimeCount = 0;
+        }
+      }
       lastTime = time;
       updateProgress();
       // A critically damped spring keeps its velocity between wheel notches, so steps blend into one glide.
