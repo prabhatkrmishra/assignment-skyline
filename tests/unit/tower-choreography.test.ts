@@ -2,7 +2,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { applyTowerScrollProgress } from "@/components/three/TowerChoreography";
 import { createTowerScene, disposeTowerScene } from "@/components/three/TowerScene";
-import { HERO_FLOOR_NUMBER, INTERIOR_END, INTERIOR_START } from "@/lib/scroll/timeline";
+import {
+  AMENITIES_START,
+  DOLLHOUSE_LIFT_END,
+  DOLLHOUSE_LIFT_HEIGHT,
+  HERO_FACADE_LIFT_DISTANCE,
+  HERO_FLOOR_NUMBER,
+  INTERIOR_END,
+} from "@/lib/scroll/timeline";
 
 let activeWorld: ReturnType<typeof createTowerScene> | null = null;
 
@@ -19,52 +26,83 @@ function createTestWorld() {
   return activeWorld;
 }
 
-describe("hero-floor facade choreography", () => {
-  it("moves only Floor_12/Facade_Front and leaves every other facade fixed during Scene 3", () => {
+const SIDES = ["Front", "Back", "Left", "Right"] as const;
+
+describe("Scene 3 choreography: dollhouse lift + single hero panel", () => {
+  it("moves exactly one facade (Floor_12 Facade_Front) and leaves every other facade at its authored position", () => {
     const world = createTestWorld();
-    const before = world.floors.map((floor) => ({
-      number: floor.number,
-      facades: ["Front", "Back", "Left", "Right"].map((side) => {
-        const facade = floor.group.getObjectByName(`Facade_${side}`);
-        return { side, position: facade?.position.toArray() };
-      }),
-    }));
-
-    const sceneThreeProgress = (INTERIOR_START + INTERIOR_END) / 2;
-    applyTowerScrollProgress(world.floors, sceneThreeProgress);
-    const hero = world.floors.find((floor) => floor.number === HERO_FLOOR_NUMBER);
-    expect(hero?.frontFacade.position.x).toBeGreaterThan(0);
-
+    const authored = new Map<string, number[]>();
     for (const floor of world.floors) {
-      expect(floor.group.position.y).toBe(floor.baseY);
-      const initialFloor = before[floor.number - 1];
-      for (const facadeState of initialFloor.facades) {
-        const currentFacade = floor.group.getObjectByName(`Facade_${facadeState.side}`);
-        if (floor.number === HERO_FLOOR_NUMBER && facadeState.side === "Front") {
-          expect(currentFacade?.position.x).toBeGreaterThan(facadeState.position?.[0] ?? 0);
-        } else {
-          expect(currentFacade?.position.toArray()).toEqual(facadeState.position);
-        }
+      for (const side of SIDES) {
+        authored.set(`${floor.number}:${side}`, floor.group.getObjectByName(`Facade_${side}`)!.position.toArray());
       }
     }
 
-    // At the end of Scene 3, the hero facade alone is fully transparent;
-    // all other facades retain their authored glass/frame opacity.
-    applyTowerScrollProgress(world.floors, INTERIOR_END);
+    applyTowerScrollProgress(world.floors, INTERIOR_END, world.rooftop);
+
+    for (const floor of world.floors) {
+      for (const side of SIDES) {
+        const current = floor.group.getObjectByName(`Facade_${side}`)!.position.toArray();
+        const before = authored.get(`${floor.number}:${side}`)!;
+        if (floor.number === HERO_FLOOR_NUMBER && side === "Front") {
+          expect(current[0]).toBe(before[0]); // no sideways travel across the building
+          expect(current[1]).toBeCloseTo(before[1] + HERO_FACADE_LIFT_DISTANCE);
+        } else {
+          expect(current).toEqual(before);
+        }
+      }
+    }
+  });
+
+  it("fades only the hero front panel; all other materials keep their authored opacity", () => {
+    const world = createTestWorld();
+    applyTowerScrollProgress(world.floors, INTERIOR_END, world.rooftop);
     for (const floor of world.floors) {
       for (const state of floor.materialStates) {
-        if (floor.number === HERO_FLOOR_NUMBER && state.isFrontFacade) {
-          expect(state.material.opacity).toBe(0);
-        } else {
-          expect(state.material.opacity).toBe(state.baseOpacity);
-        }
+        if (floor.number === HERO_FLOOR_NUMBER && state.isFrontFacade) expect(state.material.opacity).toBe(0);
+        else expect(state.material.opacity).toBe(state.baseOpacity);
       }
     }
+  });
 
-    applyTowerScrollProgress(world.floors, 0.7);
-    expect(hero?.frontFacade.position.x).toBe(0);
-    for (const state of hero?.materialStates ?? []) {
-      expect(state.material.opacity).toBe(state.baseOpacity);
+  it("lifts Floors 13-24 and the rooftop as one rigid group; Floors 1-12 never move", () => {
+    const world = createTestWorld();
+    applyTowerScrollProgress(world.floors, INTERIOR_END, world.rooftop);
+    for (const floor of world.floors) {
+      const expected = floor.number > HERO_FLOOR_NUMBER ? floor.baseY + DOLLHOUSE_LIFT_HEIGHT : floor.baseY;
+      expect(floor.group.position.y).toBeCloseTo(expected);
     }
+    expect(world.rooftop.group.position.y).toBeCloseTo(world.rooftop.baseY + DOLLHOUSE_LIFT_HEIGHT);
+  });
+
+  it("opens a clear gap above Floor_12's ceiling line once the lift is done", () => {
+    const world = createTestWorld();
+    applyTowerScrollProgress(world.floors, DOLLHOUSE_LIFT_END, world.rooftop);
+    const hero = world.floors.find((floor) => floor.number === HERO_FLOOR_NUMBER)!;
+    const above = world.floors.find((floor) => floor.number === HERO_FLOOR_NUMBER + 1)!;
+    expect(above.group.position.y - hero.group.position.y).toBeGreaterThan(DOLLHOUSE_LIFT_HEIGHT);
+  });
+
+  it("restores the whole tower exactly after Scene 3 and when scrolling back up", () => {
+    const world = createTestWorld();
+    const authoredY = world.floors.map((floor) => floor.group.position.y);
+    applyTowerScrollProgress(world.floors, INTERIOR_END, world.rooftop);
+    applyTowerScrollProgress(world.floors, AMENITIES_START + 0.05, world.rooftop);
+    world.floors.forEach((floor, index) => {
+      expect(floor.group.position.y).toBeCloseTo(authoredY[index]);
+      expect(floor.frontFacade.position.y).toBe(0);
+      for (const state of floor.materialStates) expect(state.material.opacity).toBe(state.baseOpacity);
+    });
+    expect(world.rooftop.group.position.y).toBeCloseTo(world.rooftop.baseY);
+  });
+
+  it("is order-independent: the same progress always yields the same pose (scroll reversal)", () => {
+    const world = createTestWorld();
+    const snapshot = () => world.floors.map((floor) => [floor.group.position.y, floor.frontFacade.position.y]);
+    applyTowerScrollProgress(world.floors, 0.5, world.rooftop);
+    const forward = snapshot();
+    applyTowerScrollProgress(world.floors, 0.9, world.rooftop);
+    applyTowerScrollProgress(world.floors, 0.5, world.rooftop);
+    expect(snapshot()).toEqual(forward);
   });
 });

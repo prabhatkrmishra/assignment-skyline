@@ -18,18 +18,42 @@
  *
  * @module three/TowerChoreography
  */
-import { HERO_FACADE_SLIDE_DISTANCE, HERO_FLOOR_NUMBER, floorBuildState, heroFacadeOpenProgress } from "@/lib/scroll/timeline";
-import type { FloorRecord } from "@/components/three/TowerScene";
+import {
+  DOLLHOUSE_LIFT_HEIGHT,
+  FLOOR_COUNT,
+  HERO_FACADE_LIFT_DISTANCE,
+  HERO_FLOOR_NUMBER,
+  dollhouseLiftProgress,
+  floorBuildState,
+  heroFacadeOpenProgress,
+} from "@/lib/scroll/timeline";
+import type { FloorRecord, RooftopRecord } from "@/components/three/TowerScene";
 
-/** Applies the complete tower/facade state for one normalized scroll position. */
-export function applyTowerScrollProgress(floors: readonly FloorRecord[], progress: number): void {
+/**
+ * Apply the complete tower state for one normalized scroll position.
+ *
+ * Everything here is a pure function of `progress` (no timers, no tweens), so scrolling back
+ * reverses every move exactly.
+ *
+ * Scene 3 touches exactly two things:
+ *   1. Floors above the hero (13-24) and the rooftop translate up together (dollhouse lift).
+ *   2. Floor_12's Facade_Front lifts up and fades. No other facade on any floor is moved or faded.
+ */
+export function applyTowerScrollProgress(
+  floors: readonly FloorRecord[],
+  progress: number,
+  rooftop?: RooftopRecord,
+): void {
+  const lift = dollhouseLiftProgress(progress) * DOLLHOUSE_LIFT_HEIGHT;
+  const heroOpen = heroFacadeOpenProgress(progress);
+
   for (const floor of floors) {
     const state = floorBuildState(progress, floor.number);
-    floor.group.position.y = floor.baseY + state.verticalOffset;
+    const dollhouseOffset = floor.number > HERO_FLOOR_NUMBER ? lift : 0;
+    floor.group.position.y = floor.baseY + state.verticalOffset + dollhouseOffset;
     for (const item of floor.materialStates) {
-      const panelMultiplier = item.isFrontFacade && floor.number === HERO_FLOOR_NUMBER
-        ? 1 - heroFacadeOpenProgress(progress)
-        : 1;
+      // The panel is fully transparent by ~55% of its lift, so no floating frame hangs in front of the rooms.
+      const panelMultiplier = item.isFrontFacade && floor.number === HERO_FLOOR_NUMBER ? Math.max(0, 1 - heroOpen * 1.8) : 1;
       const opacity = item.baseOpacity * state.opacity * panelMultiplier;
       item.material.opacity = opacity;
       item.material.transparent = opacity < 0.999 || item.baseOpacity < 0.999;
@@ -37,7 +61,13 @@ export function applyTowerScrollProgress(floors: readonly FloorRecord[], progres
     }
   }
 
-  // This is intentionally the only facade transform in Scene 3.
+  // The roof rides with the top floor so it never floats away from it during Build-up or the lift.
+  if (rooftop) {
+    const top = floorBuildState(progress, FLOOR_COUNT);
+    rooftop.group.position.y = rooftop.baseY + top.verticalOffset + lift;
+  }
+
+  // This is intentionally the only facade transform in Scene 3: one panel, one floor, straight up.
   const heroFloor = floors.find((floor) => floor.number === HERO_FLOOR_NUMBER);
-  if (heroFloor) heroFloor.frontFacade.position.x = heroFacadeOpenProgress(progress) * HERO_FACADE_SLIDE_DISTANCE;
+  if (heroFloor) heroFloor.frontFacade.position.y = heroOpen * HERO_FACADE_LIFT_DISTANCE;
 }
