@@ -6,7 +6,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export function GET(request: NextRequest) {
-  const raw = Object.fromEntries(request.nextUrl.searchParams.entries());
+  const params = request.nextUrl.searchParams;
+  const seen = new Set<string>();
+  for (const key of params.keys()) {
+    if (seen.has(key)) {
+      return NextResponse.json(
+        { error: "Invalid property query parameters", details: { [key]: ["Provide each query parameter only once"] } },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    seen.add(key);
+  }
+
+  const raw = Object.fromEntries(params.entries());
   const parsed = propertySearchSchema.safeParse(raw);
 
   if (!parsed.success) {

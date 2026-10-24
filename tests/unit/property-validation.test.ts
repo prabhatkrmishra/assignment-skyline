@@ -12,9 +12,10 @@ describe("propertySearchSchema", () => {
     });
   });
 
-  it("rejects invalid limits and contradictory price ranges", () => {
+  it("rejects invalid limits, contradictory ranges, and unknown parameters", () => {
     expect(propertySearchSchema.safeParse({ limit: "25" }).success).toBe(false);
     expect(propertySearchSchema.safeParse({ minPrice: "9000000", maxPrice: "1000000" }).success).toBe(false);
+    expect(propertySearchSchema.safeParse({ unknownFilter: "anything" }).success).toBe(false);
   });
 });
 

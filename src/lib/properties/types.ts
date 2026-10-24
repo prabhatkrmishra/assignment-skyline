@@ -21,6 +21,7 @@ export const propertySearchSchema = z
     page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
     limit: z.coerce.number().int().min(1).max(24).optional().default(12),
   })
+  .strict()
   .superRefine((value, context) => {
     if (value.minPrice !== undefined && value.maxPrice !== undefined && value.minPrice > value.maxPrice) {
       context.addIssue({

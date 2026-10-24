@@ -27,10 +27,17 @@ test.describe("Skyline user journeys", () => {
     await expect(page.locator("#filter-bhk")).toHaveValue("");
   });
 
-  test("returns a clear validation error for an unsupported page size", async ({ request }) => {
-    const response = await request.get("/api/properties?limit=25");
-    expect(response.status()).toBe(400);
-    expect(await response.json()).toMatchObject({ error: "Invalid property query parameters" });
+  test("returns a clear validation error for unsupported listing query parameters", async ({ request }) => {
+    const oversizedPage = await request.get("/api/properties?limit=25");
+    expect(oversizedPage.status()).toBe(400);
+    expect(await oversizedPage.json()).toMatchObject({ error: "Invalid property query parameters" });
+
+    const unknownFilter = await request.get("/api/properties?sort=unknown");
+    expect(unknownFilter.status()).toBe(400);
+
+    const duplicateFilter = await request.get("/api/properties?bhk=2&bhk=3");
+    expect(duplicateFilter.status()).toBe(400);
+    expect(await duplicateFilter.json()).toMatchObject({ details: { bhk: ["Provide each query parameter only once"] } });
   });
 
   test("shows an actual not-found page for an unknown property slug", async ({ page }) => {
