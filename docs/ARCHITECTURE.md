@@ -106,7 +106,7 @@ The single source of truth for all scroll-driven motion is `src/lib/scroll/timel
 - Engine: SQLite via `better-sqlite3`, ORM: Drizzle.
 - Schema: `src/lib/db/schema.ts` (properties, enquiries).
 - Connection: `src/lib/db/index.ts` (WAL, busy timeout, foreign keys).
-- Migrations: `drizzle/` (run via `scripts/migrate.ts`).
+- Migrations: `drizzle/` (applied automatically at server startup via `src/lib/db/migrate.ts`; `scripts/migrate.ts` remains for CI/deployment).
 - Seed: `scripts/seed.ts` (60 fictional properties).
 
 ### Repository pattern

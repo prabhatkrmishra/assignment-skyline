@@ -20,6 +20,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { ensureDatabase } from "@/lib/db/migrate";
 import * as schema from "@/lib/db/schema";
 
 loadEnvConfig(process.cwd());
@@ -29,7 +30,7 @@ const databasePath = configuredPath === ":memory:" || configuredPath.startsWith(
   ? configuredPath
   : isAbsolute(configuredPath)
     ? configuredPath
-    : resolve(process.cwd(), configuredPath);
+    : resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
 
 if (databasePath !== ":memory:") {
   mkdirSync(dirname(databasePath), { recursive: true });
@@ -51,6 +52,14 @@ sqlite.pragma("busy_timeout = 5000");
 export const db = globalForDatabase.skylineDrizzle ?? drizzle(sqlite, { schema });
 /** Raw better-sqlite3 connection. */
 export { sqlite };
+
+// Apply pending migrations before any query can run. Errors are intentionally
+// not swallowed: a broken migration should stop startup with the real cause.
+const migrationGlobals = globalThis as { skylineMigrated?: boolean };
+if (!migrationGlobals.skylineMigrated) {
+  ensureDatabase(db, sqlite);
+  migrationGlobals.skylineMigrated = true;
+}
 
 if (process.env.NODE_ENV !== "production") {
   globalForDatabase.skylineSqlite = sqlite;

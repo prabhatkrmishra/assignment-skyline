@@ -18,15 +18,16 @@ Use Node.js 22 LTS or another Node.js release supported by the pinned Next.js ve
 ```bash
 cp .env.example .env
 npm install
-npm run db:migrate && npm run db:seed
+npm run db:seed
 npm run dev
 ```
 
-Open `http://localhost:3000`. The seed script creates 60 fictional property records across Indian localities. Existing data is not overwritten by a second seed run.
+Open `http://localhost:3000`. Pending migrations run automatically when the server (or any script importing the database) starts, creating the SQLite file and tables if needed. `npm run db:migrate` remains available for CI/deployment steps. The seed script creates 60 fictional property records across Indian localities. Existing data is not overwritten by a second seed run.
 
 ## Environment and persistent storage
 
 - `DATABASE_URL` defaults to `file:./data/skyline.sqlite`. Keep this file on persistent local disk; do not place it in a temporary build/output directory.
+- `DRIZZLE_MIGRATIONS_DIR` defaults to `./drizzle` relative to the process working directory. Set it only when the server is started from another directory; startup fails with the resolved path if the journal is missing.
 - `RATE_LIMIT_SALT` should be replaced with a long random value in the runtime environment. Do not commit `.env` or database files.
 - `NEXT_PUBLIC_SITE_URL` should be set to the public canonical origin before taking SEO/performance reports.
 - `ADMIN_PASSWORD` is reserved for the optional admin bonus; no admin route is part of the mandatory implementation.
