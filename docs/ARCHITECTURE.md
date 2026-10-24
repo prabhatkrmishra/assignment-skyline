@@ -64,6 +64,12 @@ The landing page is three sections in a fixed order, and only the second is scro
 2. **Cinematic 3D story** (`landing/TowerStory.tsx`, id `tower`): begins only when the visitor scrolls to it. `TowerCanvas` is not requested until the first scroll, an open mid-page, or `HERO_SETTLE_MS` after load, and its render loop runs only while the section is on screen. A “Skip animation” button sits at the top of the pinned stage (and over the still-image fallback) and jumps to `#philosophy`, moving focus with it.
 3. **Philosophy** (`landing/PhilosophySection.tsx`, `PhilosophyReveal.tsx`, id `philosophy`): “Luxury isn’t more. It’s more considered.” Same serif, tracking and cream-on-green palette as the story’s closing scene, with one entrance animation (lines rise through masks, image unveils, paragraph settles in). It is server-rendered visible; the hidden starting state is armed after hydration and only when motion is allowed.
 
+### Motion language, quality tiers and degradation
+
+- **Arrival headline** fades in from scroll position as the story section enters the viewport (fully visible when the stage pins).
+- **Quality tiers:** reduced motion, Save-Data, ≤2 CPU cores, ≤2 GB device memory, no WebGL, or a lost context all render the designed still-image story (`StaticStory`), never a blank canvas. On devices that do run WebGL, DPR is capped at 1.5 and steps down toward 1 if the average frame time stays above 24 ms for ~1.5 s.
+- **Site-wide motion** shares the landing easing (`--ease-out`): route fade (`app/template.tsx`, skipped on first load), filter results dim while loading and cards re-enter in a stagger, gallery images crossfade, card hover zoom. All of it is disabled under `prefers-reduced-motion`.
+
 ## 5. Scroll choreography (3D tower)
 
 The single source of truth for all scroll-driven motion is `src/lib/scroll/timeline.ts`.
