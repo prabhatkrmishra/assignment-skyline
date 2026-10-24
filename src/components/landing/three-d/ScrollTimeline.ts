@@ -4,6 +4,7 @@ export const BUILD_START = 0.18;
 export const BUILD_END = 0.4;
 export const INTERIOR_START = 0.4;
 export const INTERIOR_END = 0.6;
+export const INTERIOR_APPROACH = 0.49;
 export const AMENITIES_START = 0.635;
 export const GYM_STOP_START = 0.72;
 export const GARDEN_STOP_START = 0.8;
@@ -52,14 +53,14 @@ interface Vector3Setter {
 
 const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   { t: 0, position: [11, 8.2, 14], target: [0, 3.9, 0] },
-  { t: 0.18, position: [9.4, 7.1, 13], target: [0, 4, 0] },
-  { t: 0.4, position: [8.7, 6.8, 12], target: [0, 4, 0] },
-  { t: 0.49, position: [3.1, 3.4, 4.8], target: [0, 3.8, 0.25] },
-  { t: 0.6, position: [4.2, 3.6, 4.4], target: [0, 3.3, 0] },
-  { t: 0.635, position: [7.6, 4.5, 8], target: [5.5, 0.3, 1.3] },
-  { t: 0.72, position: [-7.3, 3.4, 7], target: [-5.2, 0.8, -3.2] },
-  { t: 0.8, position: [7.8, 3.5, -7.8], target: [4.8, 0.6, -5.2] },
-  { t: 0.86, position: [8.6, 6.6, 12.7], target: [0, 4, 0] },
+  { t: BUILD_START, position: [9.4, 7.1, 13], target: [0, 4, 0] },
+  { t: BUILD_END, position: [8.7, 6.8, 12], target: [0, 4, 0] },
+  { t: INTERIOR_APPROACH, position: [3.1, 3.4, 4.8], target: [0, 3.8, 0.25] },
+  { t: INTERIOR_END, position: [4.2, 3.6, 4.4], target: [0, 3.3, 0] },
+  { t: AMENITIES_START, position: [7.6, 4.5, 8], target: [5.5, 0.3, 1.3] },
+  { t: GYM_STOP_START, position: [-7.3, 3.4, 7], target: [-5.2, 0.8, -3.2] },
+  { t: GARDEN_STOP_START, position: [7.8, 3.5, -7.8], target: [4.8, 0.6, -5.2] },
+  { t: CTA_START, position: [8.6, 6.6, 12.7], target: [0, 4, 0] },
   { t: 1, position: [10.5, 7.8, 13.8], target: [0, 4, 0] },
 ];
 
