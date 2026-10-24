@@ -65,7 +65,7 @@ function StaticStory() {
               <h2>{scene.title}</h2>
               <p>{scene.body}</p>
               <span className="story-copy__tag">{index === 3 ? amenitySlides[0].tag : scene.tag}</span>
-              {index === 3 ? <div className="story-static-amenities">{amenitySlides.map((amenity) => <article key={amenity.tag}><Image src={amenity.image} alt="" fill sizes="(max-width: 600px) 70vw, 18vw" /><span>{amenity.tag}</span><strong>{amenity.title}</strong></article>)}</div> : null}
+              {index === 3 ? <div className="story-static-amenities">{amenitySlides.map((amenity) => <article key={amenity.tag}><Image src={amenity.image} alt="" fill sizes="(max-width: 600px) 70vw, 18vw" quality={80} /><span>{amenity.tag}</span><strong>{amenity.title}</strong></article>)}</div> : null}
               {index === scenes.length - 1 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
             </div>
           </section>
