@@ -12,6 +12,7 @@ interface PropertyGalleryProps {
 export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const safeImages = images.length ? images : ["/images/properties/living-room.webp"];
   const [active, setActive] = useState(0);
+  const activeIndex = active % safeImages.length;
   const [expanded, setExpanded] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previous = useCallback(() => setActive((current) => (current - 1 + safeImages.length) % safeImages.length), [safeImages.length]);
@@ -30,8 +31,8 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       if (event.key === "ArrowRight") next();
     }}>
       <div className="property-gallery__main">
-        <Image src={safeImages[active]} alt={`${title}, image ${active + 1} of ${safeImages.length}`} fill priority sizes="(max-width: 900px) 100vw, 64vw" quality={85} />
-        <span className="property-gallery__counter">0{active + 1} <i /> 0{safeImages.length}</span>
+        <Image src={safeImages[activeIndex]} alt={`${title}, image ${activeIndex + 1} of ${safeImages.length}`} fill priority sizes="(max-width: 900px) 100vw, 64vw" quality={85} />
+        <span className="property-gallery__counter">0{activeIndex + 1} <i /> 0{safeImages.length}</span>
         <div className="property-gallery__controls">
           <button type="button" aria-label="Previous property image" onClick={previous}><ArrowLeft size={18} /></button>
           <button type="button" aria-label="Next property image" onClick={next}><ArrowRight size={18} /></button>
@@ -42,7 +43,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       </div>
       <div className="property-gallery__thumbs" aria-label="Choose an image">
         {safeImages.map((image, index) => (
-          <button className={index === active ? "is-active" : ""} type="button" key={image} onClick={() => setActive(index)} aria-label={`Show image ${index + 1}`} aria-pressed={index === active}>
+          <button className={index === activeIndex ? "is-active" : ""} type="button" key={image} onClick={() => setActive(index)} aria-label={`Show image ${index + 1}`} aria-pressed={index === activeIndex}>
             <Image src={image} alt="" fill sizes="(max-width: 900px) 28vw, 12vw" quality={70} />
           </button>
         ))}
@@ -59,11 +60,11 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
         <div className="property-lightbox__frame">
           <div className="property-lightbox__topline">
             <p>{title}</p>
-            <span>{String(active + 1).padStart(2, "0")} / {String(safeImages.length).padStart(2, "0")}</span>
+            <span>{String(activeIndex + 1).padStart(2, "0")} / {String(safeImages.length).padStart(2, "0")}</span>
             <button type="button" onClick={() => setExpanded(false)} aria-label="Close image viewer">Close <span aria-hidden="true">×</span></button>
           </div>
           <div className="property-lightbox__image">
-            <Image src={safeImages[active]} alt={`${title}, enlarged image ${active + 1} of ${safeImages.length}`} fill sizes="94vw" quality={85} />
+            <Image src={safeImages[activeIndex]} alt={`${title}, enlarged image ${activeIndex + 1} of ${safeImages.length}`} fill sizes="94vw" quality={85} />
           </div>
           {safeImages.length > 1 ? (
             <div className="property-lightbox__controls">
