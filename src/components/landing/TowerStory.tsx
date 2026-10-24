@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUpRight, Building2, Dumbbell, Waves } from "lucide-react";
+import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/components/landing/three-d/ScrollTimeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
@@ -107,10 +108,10 @@ export function TowerStory() {
       const rect = story.getBoundingClientRect();
       const range = Math.max(1, story.offsetHeight - window.innerHeight);
       const progress = Math.min(1, Math.max(0, -rect.top / range));
-      const nextScene = progress < 0.18 ? 0 : progress < 0.4 ? 1 : progress < 0.6 ? 2 : progress < 0.86 ? 3 : 4;
+      const nextScene = sceneIndexAtProgress(progress);
       setActiveScene((current) => current === nextScene ? current : nextScene);
-      if (progress >= 0.6 && progress < 0.86) {
-        const nextAmenity = progress < 0.675 ? 0 : progress < 0.76 ? 1 : 2;
+      if (progress >= AMENITIES_START && progress < CTA_START) {
+        const nextAmenity = amenityIndexAtProgress(progress);
         setActiveAmenity((current) => current === nextAmenity ? current : nextAmenity);
       }
     };

@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { BUILD_END, BUILD_START, clamp01, segmentProgress, updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
+import {
+  AMENITIES_START,
+  BUILD_END,
+  BUILD_START,
+  CTA_START,
+  GARDEN_STOP_START,
+  GYM_STOP_START,
+  clamp01,
+  segmentProgress,
+  updateCameraPath,
+  amenityIndexAtProgress,
+  sceneIndexAtProgress,
+} from "@/components/landing/three-d/ScrollTimeline";
 
 interface VectorStub {
   x: number;
@@ -40,6 +52,24 @@ describe("scroll timeline", () => {
   it("handles degenerate intervals without producing NaN", () => {
     expect(segmentProgress(0, 0.5, 0.5)).toBe(0);
     expect(segmentProgress(0.5, 0.5, 0.5)).toBe(1);
+  });
+
+  it("switches story copy at the camera's scene boundaries", () => {
+    expect(sceneIndexAtProgress(BUILD_START - 0.001)).toBe(0);
+    expect(sceneIndexAtProgress(BUILD_START)).toBe(1);
+    expect(sceneIndexAtProgress(BUILD_END)).toBe(2);
+    expect(sceneIndexAtProgress(AMENITIES_START - 0.001)).toBe(2);
+    expect(sceneIndexAtProgress(AMENITIES_START)).toBe(3);
+    expect(sceneIndexAtProgress(CTA_START - 0.001)).toBe(3);
+    expect(sceneIndexAtProgress(CTA_START)).toBe(4);
+  });
+
+  it("keeps each amenity panel until the camera reaches the next stop", () => {
+    expect(amenityIndexAtProgress(AMENITIES_START)).toBe(0);
+    expect(amenityIndexAtProgress(GYM_STOP_START - 0.001)).toBe(0);
+    expect(amenityIndexAtProgress(GYM_STOP_START)).toBe(1);
+    expect(amenityIndexAtProgress(GARDEN_STOP_START - 0.001)).toBe(1);
+    expect(amenityIndexAtProgress(GARDEN_STOP_START)).toBe(2);
   });
 
   it("keeps the camera path finite and clamped at both ends", () => {
