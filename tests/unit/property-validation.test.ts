@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enquirySchema, propertySearchSchema } from "@/lib/properties/types";
+import { getTodayInIndia, isCalendarDate } from "@/lib/properties/date";
 
 describe("propertySearchSchema", () => {
   it("normalizes absent values to a stable default query", () => {
@@ -19,6 +20,11 @@ describe("propertySearchSchema", () => {
   });
 });
 
+function shiftIndiaDate(days: number): string {
+  const [year, month, day] = getTodayInIndia().split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
 describe("enquirySchema", () => {
   const valid = {
     propertySlug: "skyline-residence-gurugram",
@@ -26,7 +32,7 @@ describe("enquirySchema", () => {
     phone: "9876543210",
     email: "",
     message: "I would like to arrange a visit this weekend.",
-    preferredVisitDate: "2027-01-10",
+    preferredVisitDate: shiftIndiaDate(30),
     website: "",
   };
 
@@ -34,11 +40,18 @@ describe("enquirySchema", () => {
     expect(enquirySchema.parse(valid).email).toBeUndefined();
   });
 
-  it("rejects impossible calendar dates and accepts leap days only in leap years", () => {
+  it("rejects impossible dates and accepts leap days only in leap years", () => {
+    expect(isCalendarDate("2027-02-31")).toBe(false);
+    expect(isCalendarDate("2027-02-29")).toBe(false);
+    expect(isCalendarDate("2028-02-29")).toBe(true);
+    expect(isCalendarDate("not-a-date")).toBe(false);
     expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2027-02-31" }).success).toBe(false);
-    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2027-02-29" }).success).toBe(false);
-    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2028-02-29" }).success).toBe(true);
-    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "not-a-date" }).success).toBe(false);
+  });
+
+  it("rejects a past visit date through the shared validation schema", () => {
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: shiftIndiaDate(-1) }).success).toBe(false);
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: shiftIndiaDate(0) }).success).toBe(true);
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: shiftIndiaDate(1) }).success).toBe(true);
   });
 
   it("rejects malformed phone numbers and short messages", () => {

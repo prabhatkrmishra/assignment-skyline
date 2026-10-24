@@ -111,7 +111,7 @@ test.describe("Skyline user journeys", () => {
     await page.goto(`/properties/${slug}`);
     await page.getByLabel("Full name").fill("Aarav Sharma");
     await page.getByLabel("Mobile number").fill("1234567890");
-    await page.getByLabel("Preferred visit date").fill("2027-01-10");
+    await page.getByLabel("Preferred visit date").fill(futureVisitDate());
     await page.getByLabel(/Anything you’d like us to know/i).fill("I would like to arrange a private visit.");
     await page.getByRole("button", { name: /Request a private visit/i }).click();
 

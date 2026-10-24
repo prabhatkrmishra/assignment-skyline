@@ -9,14 +9,6 @@ import { readJsonBody } from "@/lib/http/read-json-body";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function indiaToday(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
-
 export async function POST(request: Request) {
   const body = await readJsonBody(request);
   if (!body.ok) {
@@ -35,10 +27,6 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  if (input.preferredVisitDate < indiaToday()) {
-    return NextResponse.json({ error: "Preferred visit date cannot be in the past", details: { preferredVisitDate: ["Choose today or a future date"] } }, { status: 400 });
-  }
-
   const ip = request.headers.get("x-real-ip")?.trim()
     || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim()
     || "unknown";

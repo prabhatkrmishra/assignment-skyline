@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { CalendarDays, CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { enquirySchema } from "@/lib/properties/types";
+import { getTodayInIndia } from "@/lib/properties/date";
 
 type EnquiryFields = {
   name: string;
@@ -14,14 +15,8 @@ type EnquiryFields = {
 };
 type FieldErrors = Partial<Record<keyof EnquiryFields | "propertySlug", string>>;
 
-function todayInIndia() {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-  const part = (type: string) => parts.find((entry) => entry.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
 export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: string; propertyTitle: string }) {
-  const today = useMemo(todayInIndia, []);
+  const today = useMemo(getTodayInIndia, []);
   const [values, setValues] = useState<EnquiryFields>({ name: "", phone: "", email: "", message: "", preferredVisitDate: "", website: "" });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
@@ -50,11 +45,6 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
       setErrors(fieldErrors);
       return;
     }
-    if (values.preferredVisitDate < today) {
-      setErrors((current) => ({ ...current, preferredVisitDate: "Choose today or a future date" }));
-      return;
-    }
-
     submissionLock.current = true;
     setPending(true);
     try {

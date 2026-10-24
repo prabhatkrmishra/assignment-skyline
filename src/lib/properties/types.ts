@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { InferSelectModel } from "drizzle-orm";
 import type { properties } from "@/lib/db/schema";
 import { propertySortOptions, propertyTypes } from "@/lib/properties/options";
+import { getTodayInIndia, isCalendarDate } from "@/lib/properties/date";
 
 export { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 export type { PropertySort, PropertyType } from "@/lib/properties/options";
@@ -30,27 +31,15 @@ export const propertySearchSchema = z.strictObject({
 
 export type PropertySearchParams = z.infer<typeof propertySearchSchema>;
 
-function isCalendarDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return false;
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (month < 1 || month > 12 || day < 1) return false;
-
-  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return day <= daysInMonth[month - 1];
-}
-
 export const enquirySchema = z.object({
   propertySlug: z.string().trim().min(1).max(160),
   name: z.string().trim().min(2, "Enter your full name").max(100),
   phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
   email: z.union([z.literal(""), z.string().trim().email("Enter a valid email address").max(160)]).optional().transform((value) => value || undefined),
   message: z.string().trim().min(10, "Please share at least 10 characters").max(1_000),
-  preferredVisitDate: z.string().refine(isCalendarDate, "Choose a valid calendar date in YYYY-MM-DD format"),
+  preferredVisitDate: z.string()
+    .refine(isCalendarDate, "Choose a valid calendar date in YYYY-MM-DD format")
+    .refine((value) => value >= getTodayInIndia(), "Choose today or a future date"),
   website: z.string().max(200).optional().default(""),
 });
 
