@@ -101,10 +101,15 @@ export function TowerStory() {
     updateMotion();
     motionQuery.addEventListener("change", updateMotion);
 
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    setLowPower(Boolean(connection?.saveData) || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2));
+    const lowPowerTimer = window.setTimeout(() => {
+      const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+      setLowPower(Boolean(connection?.saveData) || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2));
+    }, 0);
 
-    return () => motionQuery.removeEventListener("change", updateMotion);
+    return () => {
+      window.clearTimeout(lowPowerTimer);
+      motionQuery.removeEventListener("change", updateMotion);
+    };
   }, []);
 
   useEffect(() => {

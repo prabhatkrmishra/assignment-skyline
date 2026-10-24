@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -12,25 +12,34 @@ export function FeaturedHomes() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
 
-  const load = useCallback(async (signal: AbortSignal) => {
-    setState("loading");
-    try {
-      const response = await fetch("/api/properties?featured=true&limit=6&sort=newest", { signal, headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("Unable to load featured homes");
-      const result = await response.json() as PropertyApiResponse;
-      setItems(result.items.slice(0, 6));
-      setState("ready");
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") return;
-      setState("error");
-    }
-  }, []);
-
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
-  }, [load, attempt]);
+    let active = true;
+
+    fetch("/api/properties?featured=true&limit=6&sort=newest", {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load featured homes");
+        return (await response.json()) as PropertyApiResponse;
+      })
+      .then((result) => {
+        if (!active) return;
+        setItems(result.items.slice(0, 6));
+        setState("ready");
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        if (error instanceof Error && error.name === "AbortError") return;
+        setState("error");
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [attempt]);
 
   return (
     <section className="featured-section section-space" aria-labelledby="featured-heading">
@@ -47,7 +56,7 @@ export function FeaturedHomes() {
         {state === "error" ? (
           <div className="inline-state inline-state--error" role="alert">
             <p>Featured homes could not load just now.</p>
-            <button className="button button--outline" type="button" onClick={() => setAttempt((value) => value + 1)}><RotateCcw size={15} aria-hidden="true" /> Try again</button>
+            <button className="button button--outline" type="button" onClick={() => { setState("loading"); setAttempt((value) => value + 1); }}><RotateCcw size={15} aria-hidden="true" /> Try again</button>
           </div>
         ) : null}
         {state === "ready" && items.length ? (
