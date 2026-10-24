@@ -1,4 +1,22 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+
+function futureVisitDate(): string {
+  const date = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function validEnquiryPayload(propertySlug: string) {
+  return {
+    propertySlug,
+    name: "Aarav Sharma",
+    phone: "9876543210",
+    email: "",
+    message: "I would like to arrange a private visit to this residence.",
+    preferredVisitDate: futureVisitDate(),
+    website: "",
+  };
+}
 
 test.describe("Skyline user journeys", () => {
   test("loads the landing story and six featured homes", async ({ page }) => {
@@ -44,6 +62,43 @@ test.describe("Skyline user journeys", () => {
     await page.goto("/properties/this-property-does-not-exist");
     await expect(page.getByText("404", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: /This address doesn’t exist/i })).toBeVisible();
+  });
+
+  test("saves a valid enquiry and displays the success state", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ "x-real-ip": `e2e-form-${randomUUID()}` });
+    await page.goto("/properties");
+    const firstPropertyLink = page.locator("a[data-property-link]").first();
+    const detailHref = await firstPropertyLink.getAttribute("href");
+    expect(detailHref).toBeTruthy();
+    await page.goto(detailHref!);
+
+    await page.getByLabel("Full name").fill("Aarav Sharma");
+    await page.getByLabel("Mobile number").fill("9876543210");
+    await page.getByLabel("Email address").fill("aarav@example.com");
+    await page.getByLabel("Preferred visit date").fill(futureVisitDate());
+    await page.getByLabel(/Anything you’d like us to know/i).fill("I would like to arrange a private visit.");
+    await page.getByRole("button", { name: /Request a private visit/i }).click();
+
+    await expect(page.getByRole("status").getByText(/Your enquiry for/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Thank you\. We’ll be in touch/i })).toBeVisible();
+  });
+
+  test("rate-limits the sixth enquiry from the same client", async ({ request }) => {
+    const listingResponse = await request.get("/api/properties?limit=1");
+    expect(listingResponse.ok()).toBeTruthy();
+    const listing = await listingResponse.json() as { items: Array<{ slug: string }> };
+    const slug = listing.items[0]?.slug;
+    expect(slug).toBeTruthy();
+    const headers = { "x-real-ip": `e2e-rate-${randomUUID()}` };
+
+    for (let index = 0; index < 5; index += 1) {
+      const response = await request.post("/api/enquiries", { headers, data: validEnquiryPayload(slug!) });
+      expect(response.status()).toBe(201);
+    }
+
+    const limited = await request.post("/api/enquiries", { headers, data: validEnquiryPayload(slug!) });
+    expect(limited.status()).toBe(429);
+    expect(Number(limited.headers()["retry-after"])).toBeGreaterThan(0);
   });
 
   test("preserves form values and shows inline mobile validation", async ({ page, request }) => {
