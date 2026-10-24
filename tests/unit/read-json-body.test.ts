@@ -27,6 +27,12 @@ describe("readJsonBody", () => {
     expect(result).toEqual({ ok: false, status: 413, error: "Request body is too large" });
   });
 
+  it("counts actual bytes even when Content-Length understates the body", async () => {
+    const payload = "x".repeat(DEFAULT_MAX_JSON_BODY_BYTES + 1);
+    const result = await readJsonBody(requestWithBody(payload, { "content-length": "1" }));
+    expect(result).toEqual({ ok: false, status: 413, error: "Request body is too large" });
+  });
+
   it("counts streamed bytes even when Content-Length is absent", async () => {
     const payload = "x".repeat(DEFAULT_MAX_JSON_BODY_BYTES + 1);
     const stream = new ReadableStream<Uint8Array>({

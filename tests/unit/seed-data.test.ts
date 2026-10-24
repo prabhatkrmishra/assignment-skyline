@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createSeedProperties } from "@/lib/db/seed-data";
 
@@ -25,5 +27,14 @@ describe("fictional property seed data", () => {
 
   it("marks enough homes for the six-card featured collection", () => {
     expect(records.filter((property) => property.featured).length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("references existing local image assets", () => {
+    for (const property of records) {
+      for (const image of property.images) {
+        expect(image.startsWith("/images/properties/")).toBe(true);
+        expect(existsSync(resolve(process.cwd(), "public", image.slice(1)))).toBe(true);
+      }
+    }
   });
 });
