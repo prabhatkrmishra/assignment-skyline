@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, RotateCcw } from "@/components/ui/icons";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGridSkeleton } from "@/components/properties/PropertyGridSkeleton";
 import type { Property, PropertyApiResponse } from "@/lib/properties/types";

@@ -19,7 +19,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@/components/ui/icons";
 
 /** Global error boundary. */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {

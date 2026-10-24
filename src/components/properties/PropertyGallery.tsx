@@ -19,7 +19,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Expand } from "lucide-react";
+import { ArrowLeft, ArrowRight, Expand } from "@/components/ui/icons";
 
 interface PropertyGalleryProps {
   images: string[];

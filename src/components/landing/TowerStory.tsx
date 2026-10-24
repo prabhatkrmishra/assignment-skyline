@@ -23,7 +23,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowDown, ArrowUpRight, ChevronsDown } from "lucide-react";
+import { ArrowDown, ArrowUpRight, ChevronsDown } from "@/components/ui/icons";
 import { AMENITIES_START, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {

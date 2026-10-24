@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { RotateCcw, SlidersHorizontal } from "@/components/ui/icons";
 import { propertyTypes, type PropertySort } from "@/lib/properties/options";
 import { formatPriceShort } from "@/lib/properties/format";
 import { shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";

@@ -18,7 +18,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowUpRight, BedDouble, MapPin, Ruler } from "lucide-react";
+import { ArrowUpRight, BedDouble, MapPin, Ruler } from "@/components/ui/icons";
 import { formatArea, formatPrice } from "@/lib/properties/format";
 import type { Property } from "@/lib/properties/types";
 
