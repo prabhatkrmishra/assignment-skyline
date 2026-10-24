@@ -33,8 +33,11 @@ describe("enquirySchema", () => {
     expect(enquirySchema.parse(valid).email).toBeUndefined();
   });
 
-  it("rejects impossible calendar dates", () => {
+  it("rejects impossible calendar dates and accepts leap days only in leap years", () => {
     expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2027-02-31" }).success).toBe(false);
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2027-02-29" }).success).toBe(false);
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "2028-02-29" }).success).toBe(true);
+    expect(enquirySchema.safeParse({ ...valid, preferredVisitDate: "not-a-date" }).success).toBe(false);
   });
 
   it("rejects malformed phone numbers and short messages", () => {
