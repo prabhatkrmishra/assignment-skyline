@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   try {
     const property = db.select({ id: properties.id }).from(properties).where(eq(properties.slug, input.propertySlug)).get();
-    if (!property) return NextResponse.json({ error: "The selected property could not be found" }, { status: 404 });
+    if (!property) return NextResponse.json({ error: "The selected property could not be found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
 
     const [created] = db.insert(enquiries).values({
       propertyId: property.id,

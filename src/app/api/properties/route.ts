@@ -35,6 +35,6 @@ export function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("GET /api/properties failed", error);
-    return NextResponse.json({ error: "Property listings are temporarily unavailable" }, { status: 500 });
+    return NextResponse.json({ error: "Property listings are temporarily unavailable" }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
