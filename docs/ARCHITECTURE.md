@@ -18,7 +18,7 @@ All database access happens on the server. The SQLite file lives at `DATABASE_UR
 
 | Route | Type | Behaviour |
 |---|---|---|
-| `/` | Server Component | Poster-first five-scene tower story + six API-loaded featured homes |
+| `/` | Server Component | Hero (typing headline) → scroll-driven five-scene tower story with “Skip animation” → philosophy section → amenities, principles, six API-loaded featured homes |
 | `/properties` | Server Component | Search, price, BHK, type, furnishing, sort, 12-item pagination; query string is source of truth |
 | `/properties/[slug]` | Server Component | Gallery, specs, amenities, location, similar homes, enquiry form; unknown slug → 404 |
 | `GET /api/properties` | Route Handler | Query params `q`, `minPrice`, `maxPrice`, `bhk`, `type`, `furnished`, `sort`, `page`, `limit` (max 24); invalid → 400 |
@@ -56,7 +56,15 @@ tests/
   e2e/                  # Playwright journeys
 ```
 
-## 4. Scroll choreography (3D tower)
+## 4. Landing page structure
+
+The landing page is three sections in a fixed order, and only the second is scroll-driven:
+
+1. **Hero** (`landing/HeroSection.tsx`, `TypingHeadline.tsx`, `typing.ts`): branding, architectural imagery, the auto-typing h1 and the “Find your home” CTA. Plain document flow. The typing runs on its own timer and shares no state with the tower story. The full headline is always in the DOM as screen-reader text; an invisible ghost copy reserves its final size; reduced-motion and no-script visitors get the finished headline from CSS.
+2. **Cinematic 3D story** (`landing/TowerStory.tsx`, id `tower`): begins only when the visitor scrolls to it. `TowerCanvas` is not requested until the first scroll, an open mid-page, or `HERO_SETTLE_MS` after load, and its render loop runs only while the section is on screen. A “Skip animation” button sits at the top of the pinned stage (and over the still-image fallback) and jumps to `#philosophy`, moving focus with it.
+3. **Philosophy** (`landing/PhilosophySection.tsx`, `PhilosophyReveal.tsx`, id `philosophy`): “Luxury isn’t more. It’s more considered.” Same serif, tracking and cream-on-green palette as the story’s closing scene, with one entrance animation (lines rise through masks, image unveils, paragraph settles in). It is server-rendered visible; the hidden starting state is armed after hydration and only when motion is allowed.
+
+## 5. Scroll choreography (3D tower)
 
 The single source of truth for all scroll-driven motion is `src/lib/scroll/timeline.ts`.
 
@@ -104,7 +112,7 @@ Ranges are normalized from `STORY_BEATS_VH`, the scroll budget in viewport heigh
 
 `TowerCanvas.tsx` (client) creates the WebGL renderer, builds the scene, and runs a `requestAnimationFrame` loop gated by IntersectionObserver + visibility. Scroll and pointer input are smoothed by the spring in `src/lib/scroll/spring.ts`; the resulting progress drives every transform, the DOM copy and the `?debug=1` overlay. The scene supplies its own fog-matched sky and a large ground plane, and the canvas fades in over the poster after the first rendered frame. Labels are projected each frame. Slab hover raycasting is disabled during the interior scene.
 
-## 5. Database
+## 6. Database
 
 - Engine: SQLite via `better-sqlite3`, ORM: Drizzle.
 - Schema: `src/lib/db/schema.ts` (properties, enquiries).
@@ -116,13 +124,13 @@ Ranges are normalized from `STORY_BEATS_VH`, the scroll budget in viewport heigh
 
 `src/lib/properties/repository.ts` exposes typed query functions used by Route Handlers and Server Components. Validation lives in `src/lib/properties/validation.ts` (Zod) and is shared by client and server.
 
-## 6. Validation & query state
+## 7. Validation & query state
 
 - `propertySearchSchema` (Zod) validates all listing query params.
 - `updateListingQuery` / `shouldDeferPendingQuerySync` manage URL query state for filters.
 - `formatPrice`, `formatPriceRange`, `formatArea`, `formatDate` in `src/lib/properties/format.ts`.
 
-## 7. Enquiry flow
+## 8. Enquiry flow
 
 1. Client submits `EnquiryForm` → `POST /api/enquiries`.
 2. Route Handler validates with shared Zod schema, checks honeypot, hashes client IP, applies per-IP rate limit (5/10 min).
@@ -130,16 +138,16 @@ Ranges are normalized from `STORY_BEATS_VH`, the scroll budget in viewport heigh
 4. On validation failure: 400 with field errors.
 5. On rate limit: 429.
 
-## 8. Testing
+## 9. Testing
 
-- Unit: Vitest, 42 tests covering validation, query-state, scroll timeline, tower choreography, scene contract.
-- E2E: Playwright, 22 tests covering landing, listing, detail, gallery, enquiry, reduced-motion fallback.
+- Unit: Vitest, 69 tests covering validation, query-state, typing, scroll timeline, spring smoothing, tower choreography, scene contract and seed data.
+- E2E: Playwright, 13 tests covering landing, listing, detail, gallery, enquiry, reduced-motion fallback.
 - Playwright uses port 3100 and `data/skyline-e2e.sqlite` (isolated from dev DB).
 
-## 9. Performance strategy
+## 10. Performance strategy
 
-- Hero headline + poster render before Three.js loads.
-- `TowerCanvas` dynamically imported only when the story approaches the viewport.
+- The hero (typing headline + image) is the first paint; Three.js is not requested until the first scroll or shortly after the hero settles.
+- `TowerCanvas` dynamically imported only once the visitor has scrolled (or the hero has settled) and the story is near the viewport; its render loop pauses whenever the story is off screen.
 - Procedural meshes (no external models/textures) keep the 3D chunk small.
 - `GeometryFactory` caches shared geometries by signature.
 - Device pixel ratio capped at 1.5; shadow quality reduced on weaker devices.
