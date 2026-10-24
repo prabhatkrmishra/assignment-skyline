@@ -47,7 +47,7 @@ export default function HomePage() {
 
       <section className="experience-section" id="amenities" aria-labelledby="experience-title">
         <div className="experience-section__image">
-          <Image src="/images/properties/pool.webp" alt="A resort-style swimming pool framed by landscaped gardens" fill loading="eager" sizes="(max-width: 800px) 100vw, 58vw" quality={80} />
+          <Image src="/images/properties/pool.webp" alt="A resort-style swimming pool framed by landscaped gardens" fill sizes="(max-width: 800px) 100vw, 58vw" quality={80} />
           <span className="image-caption">THE RESIDENTIAL EXPERIENCE · 01</span>
         </div>
         <div className="experience-section__copy">

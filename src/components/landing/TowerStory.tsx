@@ -260,7 +260,7 @@ export function TowerStory() {
     <section id="tower" ref={storyRef} className="story-shell" style={{ "--story-height-vh": STORY_SHELL_HEIGHT_VH } as CSSProperties} aria-label="The Skyline story">
       <div className="story-stage">
         <div className="story-stage__poster-frame">
-          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill loading="eager" sizes="100vw" quality={85} />
+          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill sizes="100vw" quality={85} />
         </div>
         <div className="story-stage__wash" aria-hidden="true" />
         {shouldLoad ? <LazyTowerCanvas scrollContainerRef={storyRef} onUnsupported={handleUnsupported} /> : null}
