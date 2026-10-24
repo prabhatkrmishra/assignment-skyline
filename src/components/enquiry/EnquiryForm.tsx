@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { CalendarDays, CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { enquirySchema } from "@/lib/properties/types";
 
@@ -25,6 +25,7 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
   const [values, setValues] = useState<EnquiryFields>({ name: "", phone: "", email: "", message: "", preferredVisitDate: "", website: "" });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
+  const submissionLock = useRef(false);
   const [success, setSuccess] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -37,7 +38,7 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending) return;
+    if (submissionLock.current) return;
     setFormError("");
     setSuccess(false);
     const parsed = enquirySchema.safeParse({ propertySlug, ...values });
@@ -54,6 +55,7 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
       return;
     }
 
+    submissionLock.current = true;
     setPending(true);
     try {
       const response = await fetch("/api/enquiries", {
@@ -77,6 +79,7 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
     } catch {
       setFormError("A connection issue interrupted your request. Your details are still here; please try again.");
     } finally {
+      submissionLock.current = false;
       setPending(false);
     }
   }
