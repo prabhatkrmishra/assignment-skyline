@@ -16,7 +16,7 @@ export interface FacadeBuild {
 
 function trackOpacity(material: THREE.Material, opacity: number): void {
   material.userData.skylineBaseOpacity = opacity;
-  material.transparent = true;
+  material.transparent = opacity < 0.999;
   material.depthWrite = opacity >= 0.999;
 }
 

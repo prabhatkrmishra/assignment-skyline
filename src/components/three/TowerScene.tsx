@@ -256,7 +256,7 @@ export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.
           : currentMaterial.opacity;
         currentMaterial.userData.skylineBaseOpacity = baseOpacity;
         currentMaterial.userData.skylineBaseDepthWrite = currentMaterial.depthWrite;
-        currentMaterial.transparent = true;
+        currentMaterial.transparent = baseOpacity < 0.999;
         materialStates.push({
           material: currentMaterial,
           baseOpacity,

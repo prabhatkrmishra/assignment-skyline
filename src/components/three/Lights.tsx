@@ -44,8 +44,8 @@ export function addTowerLights(scene: THREE.Scene, shadowsEnabled: boolean): THR
   sun.shadow.camera.right = 65;
   sun.shadow.camera.top = 85;
   sun.shadow.camera.bottom = -45;
-  sun.shadow.bias = -0.00025;
-  sun.shadow.normalBias = 0.025;
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.02;
   scene.add(sun);
 
   const coolFill = new THREE.DirectionalLight("#9dc8d4", 1.25);

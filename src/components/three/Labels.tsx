@@ -31,7 +31,7 @@ export function updateRoomLabels(
   for (const label of labels) {
     const opacity = roomLabelProgress(progress, label.fadeStart);
     const point = label.projected.copy(label.position).project(camera);
-    const onScreen = point.z >= -1 && point.z <= 1 && Math.abs(point.x) <= 1.12 && Math.abs(point.y) <= 1.12;
+    const onScreen = point.z >= -1 && point.z <= 1 && Math.abs(point.x) <= 1 && Math.abs(point.y) <= 1;
     const visible = opacity > 0.001 && onScreen;
     label.element.style.transform = `translate3d(${(point.x * 0.5 + 0.5) * width}px, ${(-point.y * 0.5 + 0.5) * height}px, 0) translate(-50%, -50%)`;
     label.element.style.opacity = visible ? String(opacity) : "0";
