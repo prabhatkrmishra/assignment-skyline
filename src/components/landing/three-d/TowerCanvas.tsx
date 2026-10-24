@@ -19,6 +19,7 @@ interface ProjectedLabel {
   position: THREE.Vector3;
   visibleFrom: number;
   visibleUntil: number;
+  projected: THREE.Vector3;
 }
 
 const FLOOR_COUNT = 18;
@@ -34,7 +35,6 @@ const smooth = (value: number) => {
   return t * t * (3 - 2 * t);
 };
 const segmentProgress = (value: number, start: number, end: number) => smooth((value - start) / (end - start));
-const vec3 = (value: readonly [number, number, number]) => new THREE.Vector3(value[0], value[1], value[2]);
 
 function createFloor(
   index: number,
@@ -95,29 +95,27 @@ function createFloor(
   return floor;
 }
 
-function getCameraPath(progress: number) {
-  const keyframes = [
-    { t: 0, position: [11, 8.2, 14] as const, target: [0, 3.9, 0] as const },
-    { t: 0.18, position: [9.4, 7.1, 13] as const, target: [0, 4, 0] as const },
-    { t: 0.4, position: [8.7, 6.8, 12] as const, target: [0, 4, 0] as const },
-    { t: 0.49, position: [3.1, 3.4, 4.8] as const, target: [0, 3.8, 0.25] as const },
-    { t: 0.6, position: [4.2, 3.6, 4.4] as const, target: [0, 3.3, 0] as const },
-    { t: 0.635, position: [7.6, 4.5, 8] as const, target: [5.5, 0.3, 1.3] as const },
-    { t: 0.72, position: [-7.3, 3.4, 7] as const, target: [-5.2, 0.8, -3.2] as const },
-    { t: 0.8, position: [7.8, 3.5, -7.8] as const, target: [4.8, 0.6, -5.2] as const },
-    { t: 0.86, position: [8.6, 6.6, 12.7] as const, target: [0, 4, 0] as const },
-    { t: 1, position: [10.5, 7.8, 13.8] as const, target: [0, 4, 0] as const },
-  ];
+const CAMERA_KEYFRAMES = [
+  { t: 0, position: new THREE.Vector3(11, 8.2, 14), target: new THREE.Vector3(0, 3.9, 0) },
+  { t: 0.18, position: new THREE.Vector3(9.4, 7.1, 13), target: new THREE.Vector3(0, 4, 0) },
+  { t: 0.4, position: new THREE.Vector3(8.7, 6.8, 12), target: new THREE.Vector3(0, 4, 0) },
+  { t: 0.49, position: new THREE.Vector3(3.1, 3.4, 4.8), target: new THREE.Vector3(0, 3.8, 0.25) },
+  { t: 0.6, position: new THREE.Vector3(4.2, 3.6, 4.4), target: new THREE.Vector3(0, 3.3, 0) },
+  { t: 0.635, position: new THREE.Vector3(7.6, 4.5, 8), target: new THREE.Vector3(5.5, 0.3, 1.3) },
+  { t: 0.72, position: new THREE.Vector3(-7.3, 3.4, 7), target: new THREE.Vector3(-5.2, 0.8, -3.2) },
+  { t: 0.8, position: new THREE.Vector3(7.8, 3.5, -7.8), target: new THREE.Vector3(4.8, 0.6, -5.2) },
+  { t: 0.86, position: new THREE.Vector3(8.6, 6.6, 12.7), target: new THREE.Vector3(0, 4, 0) },
+  { t: 1, position: new THREE.Vector3(10.5, 7.8, 13.8), target: new THREE.Vector3(0, 4, 0) },
+];
 
-  let nextIndex = keyframes.findIndex((frame) => frame.t >= progress);
+function updateCameraPath(progress: number, position: THREE.Vector3, target: THREE.Vector3) {
+  let nextIndex = CAMERA_KEYFRAMES.findIndex((frame) => frame.t >= progress);
   if (nextIndex < 1) nextIndex = 1;
-  const previous = keyframes[nextIndex - 1];
-  const next = keyframes[Math.min(nextIndex, keyframes.length - 1)];
+  const previous = CAMERA_KEYFRAMES[nextIndex - 1];
+  const next = CAMERA_KEYFRAMES[Math.min(nextIndex, CAMERA_KEYFRAMES.length - 1)];
   const t = smooth((progress - previous.t) / Math.max(0.0001, next.t - previous.t));
-  return {
-    position: vec3(previous.position).lerp(vec3(next.position), t),
-    target: vec3(previous.target).lerp(vec3(next.target), t),
-  };
+  position.copy(previous.position).lerp(next.position, t);
+  target.copy(previous.target).lerp(next.target, t);
 }
 
 export default function TowerCanvas({ scrollContainerRef, onUnsupported }: TowerCanvasProps) {
@@ -130,6 +128,10 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     const canvas = canvasRef.current;
     const story = scrollContainerRef.current;
     if (!root || !canvas || !story) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onUnsupported();
+      return;
+    }
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -277,15 +279,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       element.textContent = spec.name;
       element.setAttribute("aria-hidden", "true");
       root.appendChild(element);
-      labels.push({ element, position: spec.position, visibleFrom: spec.visibleFrom, visibleUntil: spec.visibleUntil });
-    }
-
-    const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedQuery.matches) {
-      labels.forEach(({ element }) => element.remove());
-      renderer.dispose();
-      onUnsupported();
-      return;
+      labels.push({ element, position: spec.position, visibleFrom: spec.visibleFrom, visibleUntil: spec.visibleUntil, projected: new THREE.Vector3() });
     }
 
     const targetCameraPosition = new THREE.Vector3();
@@ -335,21 +329,19 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       facadePanel.position.y = 3.65 + reveal * 0.15;
       facadePanel.rotation.y = reveal * -0.2;
 
-      const path = getCameraPath(scrollProgress);
-      targetCameraPosition.copy(path.position);
-      targetLookAt.copy(path.target);
+      updateCameraPath(scrollProgress, targetCameraPosition, targetLookAt);
       pointerCurrent.lerp(pointerTarget, 1 - Math.exp(-delta * 3.5));
+      targetCameraPosition.x += pointerCurrent.x * 0.18;
+      targetCameraPosition.y -= pointerCurrent.y * 0.1;
       const cameraEase = 1 - Math.exp(-delta * 4.8);
       camera.position.lerp(targetCameraPosition, cameraEase);
-      camera.position.x += pointerCurrent.x * 0.18;
-      camera.position.y -= pointerCurrent.y * 0.1;
       currentLookAt.lerp(targetLookAt, cameraEase);
       camera.lookAt(currentLookAt);
 
       for (const label of labels) {
         const visibility = segmentProgress(scrollProgress, label.visibleFrom, label.visibleFrom + 0.02)
           * (1 - segmentProgress(scrollProgress, label.visibleUntil - 0.03, label.visibleUntil));
-        const projected = label.position.clone().project(camera);
+        const projected = label.projected.copy(label.position).project(camera);
         const x = (projected.x * 0.5 + 0.5) * root.clientWidth;
         const y = (-projected.y * 0.5 + 0.5) * root.clientHeight;
         label.element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
