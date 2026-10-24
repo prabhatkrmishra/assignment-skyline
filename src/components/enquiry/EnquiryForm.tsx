@@ -19,18 +19,11 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { CheckCircle2, LoaderCircle, Send } from "lucide-react";
-import { enquirySchema } from "@/lib/properties/types";
+import { CheckCircle, LoaderCircle, Send } from "@/components/ui/icons";
+import { validateEnquiry, type EnquiryFieldErrors, type EnquiryValues } from "@/lib/enquiry/validation";
 
-type EnquiryFields = {
-  name: string;
-  phone: string;
-  email: string;
-  message: string;
-  preferredVisitDate: string;
-  website: string;
-};
-type FieldErrors = Partial<Record<keyof EnquiryFields | "propertySlug", string>>;
+type EnquiryFields = Omit<EnquiryValues, "propertySlug">;
+type FieldErrors = EnquiryFieldErrors;
 
 /** Enquiry form for requesting a private visit to a property. */
 export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: { propertySlug: string; propertyTitle: string; minimumVisitDate: string }) {
@@ -53,13 +46,9 @@ export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: {
     if (submissionLock.current) return;
     setFormError("");
     setSuccess(false);
-    const parsed = enquirySchema.safeParse({ propertySlug, ...values });
-    if (!parsed.success) {
-      const fieldErrors: FieldErrors = {};
-      for (const [key, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
-        if (messages?.[0]) fieldErrors[key as keyof FieldErrors] = messages[0];
-      }
-      setErrors(fieldErrors);
+    const validation = validateEnquiry({ propertySlug, ...values });
+    if (!validation.ok) {
+      setErrors(validation.fieldErrors);
       return;
     }
     submissionLock.current = true;
@@ -68,7 +57,7 @@ export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: {
       const response = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify(validation.data),
       });
       const result = await response.json() as { ok?: boolean; message?: string; error?: string; details?: Record<string, string[]> };
       if (!response.ok) {
@@ -103,7 +92,7 @@ export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: {
 
       {success ? (
         <div className="form-success" role="status">
-          <CheckCircle2 size={30} strokeWidth={1.4} aria-hidden="true" />
+          <CheckCircle size={30} strokeWidth={1.4} />
           <h3>Thank you. We’ll be in touch.</h3>
           <p>Your enquiry for {propertyTitle} has been received.</p>
           <button type="button" className="text-link" onClick={() => setSuccess(false)}>Send another enquiry</button>

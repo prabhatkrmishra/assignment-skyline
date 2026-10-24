@@ -7,7 +7,7 @@
  *
  * @description
  * propertySearchSchema, enquirySchema, PropertySearchParams, EnquiryInput,
- * Property, PropertyListResult. Shared by client and server.
+ * Property, PropertyListResult. Server-side validation; types are shared.
  *
  * @scope
  * - Request validation and shared types.
@@ -21,6 +21,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import type { properties } from "@/lib/db/schema";
 import { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 import { getTodayInIndia, isCalendarDate } from "@/lib/properties/date";
+import { ENQUIRY_LIMITS, isEnquiryEmail, isIndianMobile } from "@/lib/enquiry/validation";
 
 export { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 export type { PropertySort, PropertyType } from "@/lib/properties/options";
@@ -58,18 +59,25 @@ export type PropertySearchParams = z.infer<typeof propertySearchSchema>;
 
 /** Zod schema for enquiry input. */
 export const enquirySchema = z.object({
-  propertySlug: z.string().trim().min(1).max(160),
-  name: z.string().trim().min(2, "Enter your full name").max(100),
-  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
+  propertySlug: z.string().trim().min(1).max(ENQUIRY_LIMITS.slugMax),
+  name: z.string().trim()
+    .min(ENQUIRY_LIMITS.nameMin, "Enter your full name")
+    .max(ENQUIRY_LIMITS.nameMax, `Name must be ${ENQUIRY_LIMITS.nameMax} characters or fewer`),
+  phone: z.string().trim().refine(isIndianMobile, "Enter a valid 10-digit Indian mobile number"),
   email: z.preprocess(
     (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
-    z.string().trim().email("Enter a valid email address").max(160).optional(),
+    z.string().trim()
+      .max(ENQUIRY_LIMITS.emailMax, `Email must be ${ENQUIRY_LIMITS.emailMax} characters or fewer`)
+      .refine(isEnquiryEmail, "Enter a valid email address")
+      .optional(),
   ),
-  message: z.string().trim().min(10, "Please share at least 10 characters").max(1_000),
+  message: z.string().trim()
+    .min(ENQUIRY_LIMITS.messageMin, `Please share at least ${ENQUIRY_LIMITS.messageMin} characters`)
+    .max(ENQUIRY_LIMITS.messageMax, `Message must be ${ENQUIRY_LIMITS.messageMax.toLocaleString("en-IN")} characters or fewer`),
   preferredVisitDate: z.string()
     .refine(isCalendarDate, "Choose a valid calendar date in YYYY-MM-DD format")
     .refine((value) => value >= getTodayInIndia(), "Choose today or a future date"),
-  website: z.string().max(200).optional().default(""),
+  website: z.string().max(ENQUIRY_LIMITS.websiteMax).optional().default(""),
 });
 
 /** Enquiry input shape. */
