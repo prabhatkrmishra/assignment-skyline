@@ -19,7 +19,7 @@ export const INTERIOR_START = SCENE_RANGES.interior.start;
 export const INTERIOR_END = SCENE_RANGES.interior.end;
 export const AMENITIES_START = SCENE_RANGES.amenities.start;
 export const AMENITIES_END = SCENE_RANGES.amenities.end;
-export const HERO_FACADE_CLOSE_DURATION = 0.035;
+export const HERO_FACADE_CLOSE_DURATION = 0.03;
 // Allow the facade to close and the camera to leave the apartment before the Pool panel appears.
 export const AMENITY_TRANSITION_END = AMENITIES_START + HERO_FACADE_CLOSE_DURATION + 0.015;
 export const POOL_STOP_START = AMENITY_TRANSITION_END;

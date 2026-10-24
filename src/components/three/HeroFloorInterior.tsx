@@ -52,7 +52,7 @@ export function addHeroFloorInterior(floor: THREE.Group, geometry: GeometryFacto
   const metal = makeMaterial("#a88a5d", 0.38, 0.55);
   const ceramic = makeMaterial("#e9e4d8", 0.28);
   const counter = makeMaterial("#dfd7c9", 0.28);
-  const greenery = makeMaterial("#526b50", 0.94);
+  const greenery = makeMaterial("#4a6b4a", 0.94);
 
   const finishesGroup = new THREE.Group();
   finishesGroup.name = "Room_FloorFinishes";
@@ -127,7 +127,7 @@ export function addHeroFloorInterior(floor: THREE.Group, geometry: GeometryFacto
   addBox(furniture, geometry, "Balcony_Planter_Left", [0.85, 0.45, 0.42], [-4.8, 0.39, 5.7], greenery);
   addBox(furniture, geometry, "Balcony_Planter_Right", [0.85, 0.45, 0.42], [4.8, 0.39, 5.7], greenery);
 
-  const interiorLight = new THREE.PointLight("#ffd39c", 2.2, 20, 1.8);
+  const interiorLight = new THREE.PointLight("#ffd39c", 2.6, 20, 1.8);
   interiorLight.name = "Interior_Warm_Light";
   interiorLight.position.set(-0.6, 2.6, 1.6);
   floor.add(interiorLight);

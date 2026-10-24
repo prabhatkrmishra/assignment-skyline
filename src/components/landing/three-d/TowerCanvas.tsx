@@ -48,7 +48,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 1.08;
     renderer.shadowMap.enabled = !isLowPower;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 

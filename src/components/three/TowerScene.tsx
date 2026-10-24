@@ -71,23 +71,82 @@ function addTree(
   trunkMaterial: THREE.Material,
   canopyMaterials: readonly THREE.Material[],
 ): void {
-  const tree = new THREE.Group();
+const tree = new THREE.Group();
   tree.name = `Landscape_Tree_${String(index).padStart(2, "0")}`;
   tree.position.set(x, 0, z);
   tree.scale.setScalar(scale);
-  const trunk = new THREE.Mesh(geometry.cylinder("landscape-tree-trunk", 0.12, 0.18, 1.55, 6), trunkMaterial);
+  const trunk = new THREE.Mesh(geometry.cylinder("landscape-tree-trunk", 0.3, 0.42, 2.8, 10), trunkMaterial);
   trunk.name = "Tree_Trunk";
-  trunk.position.y = 0.77;
+  trunk.position.y = 1.4;
   trunk.castShadow = true;
   tree.add(trunk);
-  const crown = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown", 1.0, 1), canopyMaterials[index % canopyMaterials.length]);
+  // Root flare.
+  const roots = new THREE.Mesh(geometry.cylinder("landscape-tree-roots", 0.55, 0.3, 0.35, 8), trunkMaterial);
+  roots.name = "Tree_Roots";
+  roots.position.y = 0.17;
+  roots.castShadow = true;
+  tree.add(roots);
+  // Branches.
+  for (let b = 0; b < 5; b += 1) {
+    const branch = new THREE.Mesh(geometry.cylinder(`landscape-tree-branch-${b}`, 0.07, 0.12, 1.1, 6), trunkMaterial);
+    branch.name = `Tree_Branch_${b}`;
+    branch.position.set(Math.cos((b / 5) * Math.PI * 2) * 0.26, 2.0 + b * 0.12, Math.sin((b / 5) * Math.PI * 2) * 0.26);
+    branch.rotation.z = Math.cos((b / 5) * Math.PI * 2) * 0.5;
+    branch.rotation.x = Math.sin((b / 5) * Math.PI * 2) * 0.5;
+    branch.castShadow = true;
+    tree.add(branch);
+  }
+  const crown = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown", 1.0, 2), canopyMaterials[index % canopyMaterials.length]);
   crown.name = "Tree_Canopy";
-  crown.position.y = 1.85;
-  crown.scale.set(1.0, 1.12, 0.95);
+  crown.position.y = 2.6;
+  crown.scale.set(1.5, 1.7, 1.4);
   crown.castShadow = true;
   crown.receiveShadow = true;
   tree.add(crown);
+  const crownMid = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown-mid", 0.9, 1), canopyMaterials[(index + 2) % canopyMaterials.length]);
+  crownMid.name = "Tree_Canopy_Mid";
+  crownMid.position.y = 2.0;
+  crownMid.scale.set(1.2, 1.0, 1.15);
+  crownMid.castShadow = true;
+  crownMid.receiveShadow = true;
+  tree.add(crownMid);
+  const crownTop = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown-top", 0.72, 1), canopyMaterials[(index + 1) % canopyMaterials.length]);
+  crownTop.name = "Tree_Canopy_Top";
+  crownTop.position.y = 3.6;
+  crownTop.scale.set(1.15, 1.25, 1.1);
+  crownTop.castShadow = true;
+  crownTop.receiveShadow = true;
+  tree.add(crownTop);
   parent.add(tree);
+}
+
+function addBush(
+  parent: THREE.Object3D,
+  geometry: GeometryFactory,
+  x: number,
+  z: number,
+  scale: number,
+  index: number,
+  materials: readonly THREE.Material[],
+): void {
+  const bush = new THREE.Group();
+  bush.name = `Landscape_Bush_${String(index).padStart(2, "0")}`;
+  bush.position.set(x, 0, z);
+  bush.scale.setScalar(scale);
+  const mound = new THREE.Mesh(geometry.icosahedron("landscape-bush-mound", 0.75, 1), materials[index % materials.length]);
+  mound.name = "Bush_Mound";
+  mound.position.y = 0.55;
+  mound.scale.set(1.6, 0.9, 1.5);
+  mound.castShadow = true;
+  mound.receiveShadow = true;
+  bush.add(mound);
+  const moundTop = new THREE.Mesh(geometry.icosahedron("landscape-bush-top", 0.45, 0), materials[(index + 1) % materials.length]);
+  moundTop.name = "Bush_Top";
+  moundTop.position.y = 1.05;
+  moundTop.scale.set(1.3, 0.95, 1.25);
+  moundTop.castShadow = true;
+  bush.add(moundTop);
+  parent.add(bush);
 }
 
 function createPodium(geometry: GeometryFactory, tower: THREE.Group, shadowed: boolean): void {
@@ -166,8 +225,8 @@ function createAmenityCampus(scene: THREE.Scene, geometry: GeometryFactory, shad
   garden.position.set(16, 0, -21);
   addBox(garden, geometry, "Garden_Deck", [13.5, 0.16, 12.0], [0, 0.08, 0], material("#67785b", 0.94));
   addBox(garden, geometry, "Garden_Path", [2.15, 0.05, 10.6], [0, 0.18, 0], material("#c5b79d", 0.9));
-  const trunk = material("#765b42", 0.94);
-  const foliage = [material("#6c825b", 0.93), material("#526b4d", 0.94), material("#85906a", 0.94)];
+  const trunk = material("#5a4230", 0.9);
+  const foliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
   for (let index = 0; index < 8; index += 1) {
     const x = index % 2 === 0 ? -4.8 : 4.8;
     const z = -4.6 + Math.floor(index / 2) * 2.8;
@@ -179,42 +238,193 @@ function createAmenityCampus(scene: THREE.Scene, geometry: GeometryFactory, shad
 function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shadowed: boolean): void {
   const surroundings = new THREE.Group();
   surroundings.name = "Surroundings";
-  const ground = new THREE.Mesh(geometry.box("site-ground", 320, 0.18, 320), material("#a1aa91", 0.98));
+  const ground = new THREE.Mesh(geometry.box("site-ground", 320, 0.18, 320), material("#8f9a7e", 0.96));
   ground.name = "Ground_Plane";
   ground.position.y = -0.18;
   ground.receiveShadow = true;
   surroundings.add(ground);
 
   const blockSpecs = [
-    { x: -37, z: -22, w: 13, h: 15, d: 12 },
-    { x: 39, z: -28, w: 17, h: 22, d: 14 },
-    { x: -42, z: 24, w: 15, h: 12, d: 16 },
-    { x: 40, z: 26, w: 14, h: 18, d: 15 },
-    { x: 5, z: -43, w: 18, h: 26, d: 11 },
-    { x: -20, z: 43, w: 16, h: 19, d: 13 },
+    { x: -37, z: -22, w: 13, h: 15, d: 12, setback: 0.4 },
+    { x: 39, z: -28, w: 17, h: 22, d: 14, setback: 0.5 },
+    { x: -42, z: 24, w: 15, h: 12, d: 16, setback: 0.35 },
+    { x: 40, z: 26, w: 14, h: 18, d: 15, setback: 0.45 },
+    { x: 5, z: -43, w: 18, h: 26, d: 11, setback: 0.55 },
+    { x: -20, z: 43, w: 16, h: 19, d: 13, setback: 0.4 },
   ];
-  const blockMaterials = [material("#b7b2a4", 0.88), material("#c5b6a0", 0.86), material("#a7b5b5", 0.84)];
+  const blockMaterials = [material("#b7b2a4", 0.88), material("#c5b6a0", 0.86), material("#a7b5b5", 0.84), material("#c2b8a8", 0.85)];
   blockSpecs.forEach((spec, index) => {
+    // Stepped massing: base volume plus a smaller setback top.
+    const baseHeight = spec.h * (1 - spec.setback);
+    const topHeight = spec.h * spec.setback;
     const block = addBox(
       surroundings,
       geometry,
       `Neighbouring_Block_${String(index + 1).padStart(2, "0")}`,
-      [spec.w, spec.h, spec.d],
-      [spec.x, spec.h / 2 - 0.04, spec.z],
+      [spec.w, baseHeight, spec.d],
+      [spec.x, baseHeight / 2 - 0.04, spec.z],
       blockMaterials[index % blockMaterials.length],
       { castShadow: shadowed },
     );
     block.userData.architecturalContext = true;
+    if (topHeight > 1) {
+      const top = addBox(
+        surroundings,
+        geometry,
+        `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Top`,
+        [spec.w * 0.72, topHeight, spec.d * 0.72],
+        [spec.x, baseHeight + topHeight / 2 - 0.04, spec.z],
+        blockMaterials[(index + 1) % blockMaterials.length],
+        { castShadow: shadowed },
+      );
+      top.userData.architecturalContext = true;
+
+      // Windows on the setback top volume.
+      const topWindowParts: { width: number; height: number; depth: number; x: number; y: number; z: number }[] = [];
+      const topCols = Math.max(2, Math.floor((spec.w * 0.72) / 2.4));
+      const topRows = Math.max(2, Math.floor(topHeight / 2.8));
+      const topStartX = spec.x - ((topCols - 1) * 2.0) / 2;
+      const topStartY = baseHeight + 1.5;
+      for (let col = 0; col < topCols; col += 1) {
+        for (let row = 0; row < topRows; row += 1) {
+          topWindowParts.push({
+            width: 0.95,
+            height: 1.05,
+            depth: 0.06,
+            x: topStartX + col * 2.0,
+            y: topStartY + row * 2.4,
+            z: spec.z + (spec.d * 0.72) / 2 + 0.04,
+          });
+        }
+      }
+      if (topWindowParts.length > 0) {
+        const topWindowMesh = new THREE.Mesh(
+          geometry.boxes(`neighbour-top-windows-${index}`, topWindowParts),
+          new THREE.MeshStandardMaterial({ color: "#cfe4ea", roughness: 0.18, metalness: 0.2, transparent: true, opacity: 0.82, depthWrite: false, envMapIntensity: 0.9, emissive: "#9ec8d2", emissiveIntensity: 0.25 }),
+        );
+        topWindowMesh.name = `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Top_Windows`;
+        surroundings.add(topWindowMesh);
+      }
+    }
+
+    // Window grid on the facade facing the tower.
+    const windowParts: { width: number; height: number; depth: number; x: number; y: number; z: number }[] = [];
+    const windowCols = Math.max(3, Math.floor(spec.w / 2.4));
+    const windowRows = Math.max(3, Math.floor(baseHeight / 2.8));
+    const startX = spec.x - ((windowCols - 1) * 2.0) / 2;
+    const startY = 1.5;
+    for (let col = 0; col < windowCols; col += 1) {
+      for (let row = 0; row < windowRows; row += 1) {
+        windowParts.push({
+          width: 0.95,
+          height: 1.05,
+          depth: 0.06,
+          x: startX + col * 2.0,
+          y: startY + row * 2.4,
+          z: spec.z + spec.d / 2 + 0.04,
+        });
+      }
+    }
+    // Side facades (left/right) windows.
+    const sideCols = Math.max(2, Math.floor(spec.d / 2.4));
+    const sideRows = windowRows;
+    const sideStartZ = spec.z - ((sideCols - 1) * 2.0) / 2;
+    for (let side = 0; side < 2; side += 1) {
+      const sideX = side === 0 ? spec.x - spec.w / 2 - 0.04 : spec.x + spec.w / 2 + 0.04;
+      for (let col = 0; col < sideCols; col += 1) {
+        for (let row = 0; row < sideRows; row += 1) {
+          windowParts.push({
+            width: 0.06,
+            height: 1.05,
+            depth: 0.95,
+            x: sideX,
+            y: startY + row * 2.4,
+            z: sideStartZ + col * 2.0,
+          });
+        }
+      }
+    }
+    if (windowParts.length > 0) {
+      const windowMesh = new THREE.Mesh(
+        geometry.boxes(`neighbour-windows-${index}`, windowParts),
+        new THREE.MeshStandardMaterial({ color: "#cfe4ea", roughness: 0.18, metalness: 0.2, transparent: true, opacity: 0.82, depthWrite: false, envMapIntensity: 0.9, emissive: "#9ec8d2", emissiveIntensity: 0.25 }),
+      );
+      windowMesh.name = `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Windows`;
+      surroundings.add(windowMesh);
+    }
+
+    // Rooftop mechanical penthouse.
+    addBox(
+      surroundings,
+      geometry,
+      `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Penthouse`,
+      [spec.w * 0.35, 1.6, spec.d * 0.35],
+      [spec.x + spec.w * 0.15, spec.h + 0.8, spec.z - spec.d * 0.1],
+      material("#9a9386", 0.7),
+      { castShadow: shadowed },
+    );
   });
 
-  const trunk = material("#765c44", 0.94);
-  const foliage = [material("#607956", 0.95), material("#74865f", 0.95), material("#4e6c52", 0.95)];
+  const trunk = material("#5a4230", 0.9);
+  const foliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
   const treePositions: readonly [number, number, number][] = [
     [-13, 0.84, 8], [-13.5, 0.75, -4], [13.2, 0.9, 7], [13.5, 0.72, -5],
     [-20, 0.85, 12], [20, 0.78, -9], [-19, 0.78, -14], [9, 0.72, 17],
   ];
   treePositions.forEach(([x, scale, z], index) => addTree(surroundings, geometry, x, z, scale, index, trunk, foliage));
   scene.add(surroundings);
+
+  // Residential park and low-rise house blocks for a more believable neighbourhood.
+  const park = new THREE.Group();
+  park.name = "Neighbourhood_Park";
+  park.position.set(-12, 0, -30);
+  addBox(park, geometry, "Park_Ground", [26, 0.12, 18], [0, 0.06, 0], material("#6f8a62", 0.95));
+  addBox(park, geometry, "Park_Path_Main", [2.4, 0.05, 16], [0, 0.14, 0], material("#c9bfa6", 0.9));
+  addBox(park, geometry, "Park_Path_Cross", [20, 0.05, 2.0], [0, 0.14, 0], material("#c9bfa6", 0.9));
+  const parkTrunk = material("#5a4230", 0.9);
+  const parkFoliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
+  for (let i = 0; i < 10; i += 1) {
+    const x = -10 + (i % 5) * 5;
+    const z = -6 + Math.floor(i / 5) * 12;
+    addTree(park, geometry, x, z, 0.7 + (i % 3) * 0.1, 100 + i, parkTrunk, parkFoliage);
+  }
+  const bushMaterials = [material("#446040", 0.94), material("#54704e", 0.93)];
+  for (let i = 0; i < 14; i += 1) {
+    const x = -12 + (i % 7) * 3.6;
+    const z = -8 + Math.floor(i / 7) * 16;
+    addBush(park, geometry, x, z, 0.6 + (i % 3) * 0.12, 200 + i, bushMaterials);
+  }
+  scene.add(park);
+
+  const houseBlockSpecs = [
+    { x: 28, z: -34, w: 9, h: 6, d: 8 },
+    { x: 38, z: -34, w: 11, h: 7, d: 9 },
+    { x: 28, z: -22, w: 8, h: 5, d: 7 },
+    { x: 40, z: -20, w: 10, h: 6, d: 8 },
+  ];
+  const houseMaterials = [material("#cfc4b0", 0.82), material("#bfb09a", 0.84), material("#d6cbb5", 0.8)];
+  houseBlockSpecs.forEach((spec, index) => {
+    const house = addBox(
+      surroundings,
+      geometry,
+      `House_Block_${String(index + 1).padStart(2, "0")}`,
+      [spec.w, spec.h, spec.d],
+      [spec.x, spec.h / 2 - 0.04, spec.z],
+      houseMaterials[index % houseMaterials.length],
+      { castShadow: shadowed },
+    );
+    house.userData.architecturalContext = true;
+    // Small pitched roof.
+    const roof = new THREE.Mesh(
+      geometry.box(`house-roof-${index}`, spec.w + 0.6, 0.35, spec.d + 0.6),
+      material("#8a6f5a", 0.7),
+    );
+    roof.name = `House_Block_${String(index + 1).padStart(2, "0")}_Roof`;
+    roof.position.set(spec.x, spec.h + 0.17, spec.z);
+    roof.rotation.y = Math.PI / 4;
+    surroundings.add(roof);
+  });
+
   createAmenityCampus(scene, geometry, shadowed);
 }
 

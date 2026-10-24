@@ -33,20 +33,22 @@ export function createFacade(
   group.userData.floorNumber = floorNumber;
 
   const glass = new THREE.MeshStandardMaterial({
-    color: "#6f9eaa",
-    roughness: 0.24,
-    metalness: 0.22,
+    color: "#5fa8b5",
+    roughness: 0.14,
+    metalness: 0.32,
     transparent: true,
     opacity: 0.58,
     depthWrite: false,
-    envMapIntensity: 0.8,
+    envMapIntensity: 1.1,
   });
   const frame = new THREE.MeshStandardMaterial({
-    color: "#d9c29a",
-    roughness: 0.38,
-    metalness: 0.66,
+    color: "#c9a87a",
+    roughness: 0.28,
+    metalness: 0.78,
     transparent: true,
     opacity: 1,
+    emissive: "#b8945a",
+    emissiveIntensity: 0.18,
   });
   trackOpacity(glass, 0.58);
   trackOpacity(frame, 1);

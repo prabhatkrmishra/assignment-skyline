@@ -34,7 +34,7 @@ const heroY = PODIUM_TOP + (HERO_FLOOR_NUMBER - 1) * FLOOR_HEIGHT + 1.35;
 const towerTarget: readonly [number, number, number] = [0, PODIUM_TOP + (24 * FLOOR_HEIGHT) / 2, 0];
 const interiorTarget: readonly [number, number, number] = [0, heroY, 0.15];
 const interiorPose: CameraPose = {
-  position: [16, heroY + 13, 17],
+  position: [14, heroY + 11, 15],
   target: interiorTarget,
 };
 
@@ -44,7 +44,7 @@ const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   { t: ARRIVAL_ORBIT_MIDPOINT, position: [74, 68, 96], target: towerTarget },
   { t: BUILD_START, position: [30, 60, 118], target: towerTarget },
   { t: BUILD_END, position: [28, 59, 116], target: towerTarget },
-  { t: INTERIOR_CAMERA_APPROACH_PROGRESS, position: [23, heroY + 13, 42], target: interiorTarget },
+  { t: INTERIOR_CAMERA_APPROACH_PROGRESS, position: [21, heroY + 12, 38], target: interiorTarget },
   { t: INTERIOR_END, position: interiorPose.position, target: interiorPose.target },
 ];
 

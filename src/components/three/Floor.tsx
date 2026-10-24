@@ -27,7 +27,7 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
 
   const slab = new THREE.Mesh(
     geometry.box("floor-slab-14x10", FLOOR_WIDTH, 0.22, FLOOR_DEPTH),
-    makeFloorMaterial("#c9bea9", 0.78, 0.04),
+    makeFloorMaterial("#c9bea9", 0.72, 0.04),
   );
   slab.name = "Slab";
   slab.position.y = 0.03;
@@ -40,7 +40,7 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
   core.position.set(-4.75, 0, 0.05);
   const shaft = new THREE.Mesh(
     geometry.box("lift-stair-core", 2.05, 3.02, 2.25),
-    makeFloorMaterial("#b7aa94", 0.88),
+    makeFloorMaterial("#b7aa94", 0.82),
   );
   shaft.name = "Core_Shaft";
   shaft.position.y = 1.55;
@@ -81,7 +81,7 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
   balcony.position.set(0, 0, FLOOR_DEPTH / 2 + 0.52);
   const deck = new THREE.Mesh(
     geometry.box("balcony-deck", 10.8, 0.16, 1.25),
-    makeFloorMaterial("#d2c4aa", 0.74, 0.08),
+    makeFloorMaterial("#d2c4aa", 0.7, 0.08),
   );
   deck.name = "Balcony_Deck";
   deck.position.y = 0.13;
@@ -92,16 +92,16 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
     geometry.box("balcony-rail-glass", 10.55, 0.72, 0.045),
     new THREE.MeshStandardMaterial({
       color: "#8fb5b8",
-      roughness: 0.2,
+      roughness: 0.14,
       metalness: 0.24,
       transparent: true,
-      opacity: 0.38,
+      opacity: 0.28,
       depthWrite: false,
-      envMapIntensity: 0.85,
+      envMapIntensity: 0.9,
     }),
   );
   glassRail.name = "Balcony_GlassRailing";
-  glassRail.material.userData.skylineBaseOpacity = 0.38;
+  glassRail.material.userData.skylineBaseOpacity = 0.28;
   glassRail.position.set(0, 0.62, 0.59);
   balcony.add(glassRail);
   const railFrame = new THREE.Mesh(
@@ -119,7 +119,22 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
     makeFloorMaterial("#d8c49a", 0.37, 0.58),
   );
   railFrame.name = "Balcony_MetalFrame";
-  balcony.add(railFrame);
+  const planterLeft = new THREE.Mesh(
+    geometry.box("balcony-planter-left", 1.6, 0.32, 0.42),
+    makeFloorMaterial("#68795c", 0.92),
+  );
+  planterLeft.name = "Balcony_Planter_Left";
+  planterLeft.position.set(-3.6, 0.3, 0.78);
+  planterLeft.castShadow = true;
+  balcony.add(planterLeft);
+  const planterRight = new THREE.Mesh(
+    geometry.box("balcony-planter-right", 1.6, 0.32, 0.42),
+    makeFloorMaterial("#68795c", 0.92),
+  );
+  planterRight.name = "Balcony_Planter_Right";
+  planterRight.position.set(3.6, 0.3, 0.78);
+  planterRight.castShadow = true;
+  balcony.add(planterRight);
   group.add(balcony);
 
   const roomLabels = floorNumber === HERO_FLOOR_NUMBER ? addHeroFloorInterior(group, geometry) : [];
