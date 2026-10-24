@@ -14,9 +14,9 @@ export function hashClientIp(ip: string): string {
 }
 
 /**
- * A single SQLite transaction makes the increment atomic across concurrent requests
- * handled by this application process/DB file. It deliberately avoids a process-local
- * Map, which would reset on restart and be inconsistent across workers.
+ * An IMMEDIATE SQLite transaction obtains the write reservation before reading the
+ * counter. That avoids a deferred read-to-write lock upgrade race across app workers.
+ * The counter lives in the database, not a process-local Map that resets on restart.
  */
 export function consumeRateLimit(key: string, maxRequests = 5, windowMs = 10 * 60 * 1000): RateLimitResult {
   const now = Date.now();
@@ -45,5 +45,5 @@ export function consumeRateLimit(key: string, maxRequests = 5, windowMs = 10 * 6
     return { allowed: true, remaining: maxRequests - current.requestCount - 1, retryAfterSeconds: 0 };
   });
 
-  return transaction();
+  return transaction.immediate();
 }
