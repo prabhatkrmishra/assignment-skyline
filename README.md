@@ -42,7 +42,7 @@ The database uses foreign keys, WAL mode, a busy timeout, indexes for common pro
 - `src/lib/scroll/timeline.ts` is the canonical source for all five scene ranges, amenity stops, room-label fades, floor-build timing, and the isolated hero-facade open/close progress.
 - `src/lib/db/schema.ts` is the database schema and the source for the inferred `Property` type.
 - `src/lib/properties/` holds the shared validation contracts, query-state utilities, formatting and database repository.
-- `scripts/seed.ts` creates the fictional catalogue; `drizzle/` contains schema migrations.
+- `docs/ARCHITECTURE.md` describes the module map, data flow, 3D scene graph, and validation strategy.
 - `tests/unit/` contains pure validation/query-state tests; `tests/e2e/` covers critical browser journeys.
 
 Server Components and server-side database queries are the default. Client Components are reserved for filters, the enquiry form, image gallery, featured-home fetch state and browser-only 3D rendering.
