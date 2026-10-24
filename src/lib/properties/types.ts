@@ -1,12 +1,10 @@
 import { z } from "zod";
 import type { InferSelectModel } from "drizzle-orm";
 import type { properties } from "@/lib/db/schema";
+import { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 
-export const propertyTypes = ["Apartment", "Penthouse", "Villa", "Studio"] as const;
-export type PropertyType = (typeof propertyTypes)[number];
-
-export const propertySortOptions = ["price-asc", "price-desc", "newest"] as const;
-export type PropertySort = (typeof propertySortOptions)[number];
+export { propertySortOptions, propertyTypes } from "@/lib/properties/options";
+export type { PropertySort, PropertyType } from "@/lib/properties/options";
 
 export const propertySearchSchema = z
   .object({

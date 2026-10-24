@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
-import { propertyTypes, type PropertySort } from "@/lib/properties/types";
+import { propertyTypes, type PropertySort } from "@/lib/properties/options";
 import { shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";
 
 export function PropertyFilters() {
