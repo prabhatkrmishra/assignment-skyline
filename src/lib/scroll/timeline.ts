@@ -24,10 +24,26 @@ export const GYM_STOP_START = 0.72;
 export const GARDEN_STOP_START = 0.8;
 export const CTA_START = SCENE_RANGES.callToAction.start;
 
+// Interior camera approach and CTA camera beats are named here so all timing stays editable.
+export const ARRIVAL_ORBIT_MIDPOINT = 0.075;
+export const INTERIOR_CAMERA_APPROACH_PROGRESS = INTERIOR_START + 0.075;
+export const CTA_PULLBACK_PROGRESS = 0.93;
+export const CTA_HERO_SETTLE_PROGRESS = 0.965;
+export const ROOM_LABEL_STARTS = Object.freeze({
+  living: INTERIOR_START + 0.05,
+  bedroom: INTERIOR_START + 0.075,
+  kitchen: INTERIOR_START + 0.1,
+  balcony: INTERIOR_START + 0.125,
+});
+export const ROOM_LABEL_ENTER_DURATION = 0.022;
+export const ROOM_LABEL_EXIT_DURATION = 0.018;
+export const HERO_FACADE_CLOSE_DURATION = 0.035;
+
 export const FLOOR_COUNT = 24;
 export const FLOOR_HEIGHT = 3.2;
 export const FLOOR_WIDTH = 14;
 export const FLOOR_DEPTH = 10;
+export const HERO_FACADE_SLIDE_DISTANCE = FLOOR_WIDTH * 1.1;
 export const PODIUM_HEIGHT = 2.4;
 export const PODIUM_TOP = PODIUM_HEIGHT;
 export const HERO_FLOOR_NUMBER = 12;
@@ -98,14 +114,14 @@ export function floorBuildState(progress: number, floorNumber: number): FloorBui
 /** Only the hero apartment's front facade opens; the rest of the tower is untouched. */
 export function heroFacadeOpenProgress(progress: number): number {
   const open = segmentProgress(progress, INTERIOR_START, INTERIOR_END);
-  const close = segmentProgress(progress, AMENITIES_START, AMENITIES_START + 0.035);
+  const close = segmentProgress(progress, AMENITIES_START, AMENITIES_START + HERO_FACADE_CLOSE_DURATION);
   return clamp01(open * (1 - close));
 }
 
 /** Stagger room labels into the apartment, then fade them before leaving Scene 3. */
 export function roomLabelProgress(progress: number, fadeStart: number): number {
-  const enter = segmentProgress(progress, fadeStart, fadeStart + 0.022);
-  const leave = segmentProgress(progress, INTERIOR_END - 0.018, INTERIOR_END);
+  const enter = segmentProgress(progress, fadeStart, fadeStart + ROOM_LABEL_ENTER_DURATION);
+  const leave = segmentProgress(progress, INTERIOR_END - ROOM_LABEL_EXIT_DURATION, INTERIOR_END);
   return clamp01(enter * (1 - leave));
 }
 

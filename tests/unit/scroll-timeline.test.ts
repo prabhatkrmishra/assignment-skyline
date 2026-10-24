@@ -19,6 +19,7 @@ import {
   heroFacadeOpenProgress,
   initialFloorOffset,
   roomLabelProgress,
+  ROOM_LABEL_STARTS,
 } from "@/lib/scroll/timeline";
 import { getCameraPose, updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
 
@@ -158,6 +159,12 @@ describe("24-floor scene choreography", () => {
     expect(roomLabelProgress(0.44, 0.45)).toBe(0);
     expect(roomLabelProgress(0.49, 0.45)).toBeGreaterThan(0.9);
     expect(roomLabelProgress(INTERIOR_END, 0.45)).toBe(0);
+  });
+
+  it("keeps room-label entrance times within the interior scene and staggered", () => {
+    const starts = Object.values(ROOM_LABEL_STARTS);
+    expect(starts).toEqual([...starts].sort((left, right) => left - right));
+    expect(starts.every((start) => start >= INTERIOR_START && start < INTERIOR_END)).toBe(true);
   });
 });
 

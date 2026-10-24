@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
+import { ROOM_LABEL_STARTS } from "@/lib/scroll/timeline";
 
 export interface RoomLabelSeed {
   label: "Living" | "Bedroom" | "Kitchen" | "Balcony";
@@ -132,9 +133,9 @@ export function addHeroFloorInterior(floor: THREE.Group, geometry: GeometryFacto
   floor.add(interiorLight);
 
   return [
-    { label: "Living", position: new THREE.Vector3(-3.6, 2.42, 1.85), fadeStart: 0.45 },
-    { label: "Bedroom", position: new THREE.Vector3(4.0, 2.42, -1.05), fadeStart: 0.475 },
-    { label: "Kitchen", position: new THREE.Vector3(4.0, 2.42, 3.4), fadeStart: 0.5 },
-    { label: "Balcony", position: new THREE.Vector3(0, 1.35, 5.85), fadeStart: 0.525 },
+    { label: "Living", position: new THREE.Vector3(-3.6, 2.42, 1.85), fadeStart: ROOM_LABEL_STARTS.living },
+    { label: "Bedroom", position: new THREE.Vector3(4.0, 2.42, -1.05), fadeStart: ROOM_LABEL_STARTS.bedroom },
+    { label: "Kitchen", position: new THREE.Vector3(4.0, 2.42, 3.4), fadeStart: ROOM_LABEL_STARTS.kitchen },
+    { label: "Balcony", position: new THREE.Vector3(0, 1.35, 5.85), fadeStart: ROOM_LABEL_STARTS.balcony },
   ];
 }

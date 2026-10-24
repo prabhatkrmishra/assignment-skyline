@@ -1,10 +1,16 @@
 import {
   AMENITIES_START,
+  ARRIVAL_ORBIT_MIDPOINT,
   BUILD_END,
   BUILD_START,
   CTA_START,
+  CTA_HERO_SETTLE_PROGRESS,
+  CTA_PULLBACK_PROGRESS,
   FLOOR_HEIGHT,
+  GARDEN_STOP_START,
+  GYM_STOP_START,
   HERO_FLOOR_NUMBER,
+  INTERIOR_CAMERA_APPROACH_PROGRESS,
   INTERIOR_END,
   INTERIOR_START,
   PODIUM_TOP,
@@ -28,33 +34,33 @@ const heroY = PODIUM_TOP + (HERO_FLOOR_NUMBER - 1) * FLOOR_HEIGHT + 1.35;
 const towerTarget: readonly [number, number, number] = [0, PODIUM_TOP + (24 * FLOOR_HEIGHT) / 2, 0];
 const interiorTarget: readonly [number, number, number] = [0, heroY, 0.15];
 const interiorPose: CameraPose = {
-  position: [20, heroY + 6.2, 25],
+  position: [19, heroY + 18, 23],
   target: interiorTarget,
 };
 
 /** Major camera poses for non-amenity scenes. Arrival turns ~46 degrees around the stationary tower. */
 const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
   { t: 0, position: [105, 73, 61], target: towerTarget },
-  { t: 0.075, position: [74, 68, 96], target: towerTarget },
+  { t: ARRIVAL_ORBIT_MIDPOINT, position: [74, 68, 96], target: towerTarget },
   { t: BUILD_START, position: [30, 60, 118], target: towerTarget },
   { t: BUILD_END, position: [28, 59, 116], target: towerTarget },
-  { t: INTERIOR_START + 0.075, position: [23, heroY + 13, 42], target: interiorTarget },
+  { t: INTERIOR_CAMERA_APPROACH_PROGRESS, position: [23, heroY + 13, 42], target: interiorTarget },
   { t: INTERIOR_END, position: interiorPose.position, target: interiorPose.target },
 ];
 
 /** Amenity fly-through keyframes: the initial point joins the interior pose continuously. */
 const AMENITY_PATH: readonly CameraKeyframe[] = [
   { t: AMENITIES_START, ...interiorPose },
-  { t: 0.72, position: [31, 14.5, 26], target: [23, 1.1, 13] },
-  { t: 0.8, position: [-31, 11, 14], target: [-23, 2.5, 2] },
+  { t: GYM_STOP_START, position: [31, 14.5, 26], target: [23, 1.1, 13] },
+  { t: GARDEN_STOP_START, position: [-31, 11, 14], target: [-23, 2.5, 2] },
   { t: CTA_START, position: [25, 12, -32], target: [16, 1.1, -21] },
 ];
 
 /** The CTA pulls out from the garden into a wide golden-hour hero shot. */
 const CTA_PATH: readonly CameraKeyframe[] = [
-  { t: CTA_START, ...AMENITY_PATH[AMENITY_PATH.length - 1] },
-  { t: 0.93, position: [43, 36, -6], target: [0, towerTarget[1], 0] },
-  { t: 0.965, position: [72, 55, 34], target: towerTarget },
+  { t: CTA_START, position: AMENITY_PATH[AMENITY_PATH.length - 1].position, target: AMENITY_PATH[AMENITY_PATH.length - 1].target },
+  { t: CTA_PULLBACK_PROGRESS, position: [43, 36, -6], target: [0, towerTarget[1], 0] },
+  { t: CTA_HERO_SETTLE_PROGRESS, position: [72, 55, 34], target: towerTarget },
   { t: 1, position: [105, 73, 61], target: towerTarget },
 ];
 
