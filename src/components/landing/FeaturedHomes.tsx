@@ -4,20 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
+import { PropertyGridSkeleton } from "@/components/properties/PropertyGridSkeleton";
 import type { Property, PropertyApiResponse } from "@/lib/properties/types";
-
-function FeaturedSkeleton() {
-  return (
-    <div className="property-grid property-grid--featured" aria-label="Loading featured homes">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div className="property-card property-card--skeleton" key={index} aria-hidden="true">
-          <div className="skeleton skeleton--image" />
-          <div className="skeleton-lines"><span /><span /><span /></div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function FeaturedHomes() {
   const [items, setItems] = useState<Property[]>([]);
@@ -55,7 +43,7 @@ export function FeaturedHomes() {
         <Link className="text-link" href="/properties">View all residences <ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
       <div className="page-gutter">
-        {state === "loading" ? <FeaturedSkeleton /> : null}
+        {state === "loading" ? <PropertyGridSkeleton count={6} variant="featured" label="Loading featured homes" /> : null}
         {state === "error" ? (
           <div className="inline-state inline-state--error" role="alert">
             <p>Featured homes could not load just now.</p>

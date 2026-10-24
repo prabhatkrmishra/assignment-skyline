@@ -569,3 +569,33 @@ textarea.form-control { min-height: 118px; resize: vertical; line-height: 1.7; }
   .story-static-amenities { grid-template-columns: 1fr; width: 100%; max-width: 340px; }
   .story-static-amenities article { min-height: 70px; }
 }
+
+/* Route-level loading UI keeps the content silhouette stable while data is resolving. */
+.loading-bar { display: block; height: 10px; max-width: 100%; background: linear-gradient(100deg, #dcd8cd 25%, #e9e5dc 42%, #dcd8cd 60%); background-size: 300% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+.loading-bar--heading { width: 72%; height: 18px; }
+.loading-bar--breadcrumb { width: min(260px, 70vw); }
+.loading-bar--eyebrow { width: 115px; height: 8px; }
+.loading-bar--title { width: min(560px, 74vw); height: clamp(32px, 5vw, 64px); margin-top: .8rem; }
+.loading-bar--subtitle { width: min(290px, 54vw); margin-top: .65rem; }
+.loading-bar--price { width: 155px; height: 28px; margin-top: .75rem; }
+.loading-bar--body { width: 95%; height: 95px; margin-top: 1.2rem; }
+.loading-bar--button { width: 100%; height: 48px; margin-top: 1.4rem; }
+.loading-filter-stack { display: grid; gap: 1.25rem; margin-top: 1.5rem; }
+.loading-filter-stack .loading-bar { height: 42px; }
+.loading-results-meta { display: flex; justify-content: space-between; gap: 1rem; padding-block: 1.1rem; }
+.loading-results-meta .loading-bar:first-child { width: 150px; }
+.loading-results-meta .loading-bar:last-child { width: 110px; }
+.detail-loading .detail-topline { min-height: 170px; }
+.detail-loading__title { width: 100%; }
+.detail-loading__price { display: grid; align-content: end; min-width: 170px; padding-left: 1.8rem; border-left: 1px solid var(--line); }
+.detail-loading .property-gallery__thumbs span { min-height: 70px; }
+.detail-loading__section { display: grid; gap: .6rem; padding-block: 3rem; }
+.detail-loading__specs { display: grid; gap: .8rem; margin-top: 1.5rem; }
+.detail-loading__specs .loading-bar { height: 25px; }
+.detail-loading .property-gallery__main { aspect-ratio: 1.18 / 1; }
+@media (prefers-reduced-motion: reduce) { .loading-bar, .skeleton { animation: none !important; } }
+@media (max-width: 800px) {
+  .detail-loading__price { min-width: 0; padding: 0; border: 0; }
+  .detail-loading .detail-main-grid { grid-template-columns: 1fr; }
+  .detail-loading .detail-aside { display: none; }
+}
