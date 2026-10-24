@@ -67,7 +67,9 @@ em { font-family: var(--serif); font-weight: 400; }
 .story-stage__poster { z-index: 0; object-fit: cover; object-position: 58% center; transform: scale(1.015); }
 .story-stage__wash { position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(24,32,27,.83) 0%, rgba(24,32,27,.74) 32%, rgba(24,32,27,.5) 68%, rgba(24,32,27,.08) 100%), linear-gradient(0deg, rgba(19,29,24,.46), transparent 28%, transparent 76%, rgba(19,29,24,.12)); pointer-events: none; }
 .story-stage__grain { position: absolute; z-index: 3; inset: 0; opacity: .12; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E"); mix-blend-mode: soft-light; }
-.story-copy { position: absolute; z-index: 4; top: 48%; left: 0; width: min(690px, 65vw); transform: translateY(-48%); color: white; transition: opacity .3s ease; pointer-events: none; }
+.story-copy { position: absolute; z-index: 4; top: 48%; left: 0; width: min(690px, 65vw); transform: translateY(-48%); color: white; pointer-events: none; }
+.story-copy--scene-0 { opacity: .72; }
+.story-copy--scene-2 { top: 13%; width: min(480px, 42vw); transform: translateY(-13%); }
 .story-copy h1, .story-copy h2 { margin: 1.4rem 0 1.3rem; font-family: var(--serif); font-weight: 400; letter-spacing: -.055em; font-size: clamp(3.3rem, 6.7vw, 6.9rem); line-height: .98; }
 .story-copy h1 em, .story-copy h2 em { color: #d9c3a3; }
 .story-copy > p { max-width: 410px; margin: 0; color: #fff; font-size: clamp(.9rem, 1.05vw, 1.03rem); line-height: 1.8; }
@@ -76,7 +78,7 @@ em { font-family: var(--serif); font-weight: 400; }
 .story-copy--scene-1 h1, .story-copy--scene-2 h1, .story-copy--scene-3 h1, .story-copy--scene-4 h1 { font-size: clamp(3rem, 5.5vw, 5.6rem); }
 .story-stage__bottom { position: absolute; z-index: 5; right: 0; bottom: 1.5rem; left: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem var(--page-padding); color: #fff; background: rgba(19,29,24,.72); font-size: .58rem; letter-spacing: .17em; }
 .scroll-cue { display: inline-flex; align-items: center; gap: .6rem; }
-.scroll-cue svg { animation: nudge-down 2s ease-in-out infinite; }
+.scroll-cue svg { transform: none; }
 .story-scene-count { position: absolute; z-index: 5; top: 2.6rem; right: var(--page-padding); display: flex; align-items: center; gap: .65rem; padding: .5rem .7rem; color: #fff; background: rgba(19,29,24,.76); font-size: .66rem; letter-spacing: .1em; }
 .story-scene-count span:first-child { color: white; font-size: .9rem; }
 .story-scene-count i { display: block; width: 2.2rem; height: 1px; background: rgba(255,255,255,.4); }
@@ -213,7 +215,6 @@ em { font-family: var(--serif); font-weight: 400; }
 .site-footer__bottom a { color: rgba(233,228,216,.7); }
 
 /* Animations honour user preference */
-@keyframes nudge-down { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 @keyframes card-appear { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes skeleton-shimmer { to { background-position: -150% 0; } }
 @media (prefers-reduced-motion: reduce) {
@@ -239,6 +240,7 @@ em { font-family: var(--serif); font-weight: 400; }
   .story-stage__wash { background: linear-gradient(90deg, rgba(22,31,26,.84), rgba(22,31,26,.68) 100%), linear-gradient(0deg, rgba(19,29,24,.4), transparent 33%); }
   .story-static-card__shade { background: linear-gradient(90deg, rgba(22,31,25,.84), rgba(22,31,25,.68)); }
   .story-copy { top: 48%; width: min(610px, 88vw); }
+  .story-copy.story-copy--scene-2 { top: 13%; width: 86vw; transform: translateY(-13%); }
   .story-copy h1, .story-copy h2 { font-size: clamp(3rem, 10vw, 5.3rem); }
   .story-stage__bottom { bottom: 1.25rem; font-size: .5rem; }
   .story-stage__bottom > span:first-child { display: none; }
@@ -277,6 +279,7 @@ em { font-family: var(--serif); font-weight: 400; }
   .story-shell { height: 430vh; min-height: 1900px; }
   .story-stage { min-height: 520px; }
   .story-copy { top: 47%; width: 88vw; }
+  .story-copy.story-copy--scene-2 { top: 12%; width: 88vw; transform: translateY(-12%); }
   .story-copy h1, .story-copy h2 { margin-top: 1.1rem; font-size: clamp(2.8rem, 12vw, 4.3rem); }
   .story-copy > p { max-width: 340px; font-size: .84rem; }
   .story-copy__tag { margin-top: 1.45rem; }

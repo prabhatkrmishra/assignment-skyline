@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/components/landing/StoryProgress";
+import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
@@ -51,12 +51,19 @@ const amenitySlides = [
   { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN" },
 ];
 
+const STATIC_SCENE_IMAGES = [
+  "/images/landing/tower-poster.webp",
+  "/images/landing/tower-poster.webp",
+  "/images/properties/living-room.webp",
+  "/images/properties/pool.webp",
+  "/images/landing/tower-poster.webp",
+] as const;
+
 function StaticStory() {
   return (
     <div className="story-static-scenes">
       {scenes.map((scene, index) => {
-        const amenity = amenitySlides[Math.max(0, Math.min(amenitySlides.length - 1, index - 1))];
-        const image = index === 0 ? "/images/landing/tower-poster.webp" : index === 3 ? amenitySlides[0].image : index === 4 ? amenitySlides[2].image : amenity.image;
+        const image = STATIC_SCENE_IMAGES[index];
         return (
           <section className="story-static-card" key={scene.eyebrow}>
             <Image src={image} alt="" fill sizes="100vw" quality={80} />
@@ -78,6 +85,7 @@ function StaticStory() {
 
 export function TowerStory() {
   const storyRef = useRef<HTMLElement>(null);
+  const storyCopyRef = useRef<HTMLDivElement>(null);
   const [activeScene, setActiveScene] = useState(0);
   const [activeAmenity, setActiveAmenity] = useState(0);
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -109,6 +117,11 @@ export function TowerStory() {
       const range = Math.max(1, story.offsetHeight - window.innerHeight);
       const progress = Math.min(1, Math.max(0, -rect.top / range));
       const nextScene = sceneIndexAtProgress(progress);
+      // Keep the arrival headline visible on first paint, then finish its fade from scroll progress.
+      if (storyCopyRef.current) {
+        const arrivalFade = 0.72 + 0.28 * Math.min(1, Math.max(0, progress / 0.055));
+        storyCopyRef.current.style.opacity = String(nextScene === 0 ? arrivalFade : 1);
+      }
       setActiveScene((current) => current === nextScene ? current : nextScene);
       if (progress >= AMENITIES_START && progress < CTA_START) {
         const nextAmenity = amenityIndexAtProgress(progress);
@@ -129,20 +142,14 @@ export function TowerStory() {
   useEffect(() => {
     const story = storyRef.current;
     if (!story || reducedMotion || lowPower || unsupported) return;
-    let timeoutId = 0;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) {
-        timeoutId = window.setTimeout(() => setShouldLoad(true), 180);
-      } else if (!shouldLoad && timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
+      if (!entry?.isIntersecting) return;
+      setShouldLoad(true);
+      observer.disconnect();
     }, { rootMargin: "160px 0px", threshold: 0.01 });
     observer.observe(story);
-    return () => {
-      observer.disconnect();
-      if (timeoutId) window.clearTimeout(timeoutId);
-    };
-  }, [lowPower, reducedMotion, shouldLoad, unsupported]);
+    return () => observer.disconnect();
+  }, [lowPower, reducedMotion, unsupported]);
 
   const staticFallback = reducedMotion || lowPower || unsupported;
   if (staticFallback) {
@@ -163,7 +170,7 @@ export function TowerStory() {
         <div className="story-stage__grain" aria-hidden="true" />
         <div className="story-scene-count" aria-hidden="true"><span>0{activeScene + 1}</span><i /><span>05</span></div>
 
-        <div className={`story-copy page-gutter story-copy--scene-${activeScene}`} aria-live="polite" aria-atomic="true">
+        <div ref={storyCopyRef} className={`story-copy page-gutter story-copy--scene-${activeScene}`} aria-live="polite" aria-atomic="true">
           <span className="eyebrow eyebrow--light">{activeScene === 3 ? `04 / AMENITIES — ${String(activeAmenity + 1).padStart(2, "0")}` : scenes[activeScene].eyebrow}</span>
           {activeScene === 3 ? <h1>{amenitySlides[activeAmenity].headline}</h1> : <h1>{scenes[activeScene].title}</h1>}
           <p>{activeScene === 3 ? amenitySlides[activeAmenity].description : scenes[activeScene].body}</p>

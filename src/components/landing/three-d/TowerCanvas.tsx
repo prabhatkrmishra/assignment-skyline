@@ -151,6 +151,9 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       // The scroll timeline writes camera position directly. Only pointer parallax is damped.
       pointerCurrent.lerp(pointerTarget, 1 - Math.exp(-delta * 3.8));
       applyCameraRig(camera, scrollProgress, { x: pointerCurrent.x, y: pointerCurrent.y });
+      // Labels and slab raycasts must use this frame's matrices, not the last rendered frame.
+      camera.updateMatrixWorld(true);
+      scene.updateMatrixWorld(true);
       updateRoomLabels(projectedLabels, camera, scrollProgress, labelWidth(), labelHeight());
       updateSlabHover();
       renderer.render(scene, camera);

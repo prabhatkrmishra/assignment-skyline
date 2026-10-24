@@ -180,6 +180,16 @@ describe("camera choreography", () => {
     expect(delta).toBeLessThanOrEqual(60);
   });
 
+  it("places the interior camera at an elevated three-quarter angle over Floor_12", () => {
+    const pose = getCameraPose(INTERIOR_END);
+    const horizontalDistance = Math.hypot(
+      pose.position[0] - pose.target[0],
+      pose.position[2] - pose.target[2],
+    );
+    const verticalDistance = pose.position[1] - pose.target[1];
+    expect(verticalDistance / horizontalDistance).toBeGreaterThan(0.5);
+  });
+
   it("hits each Catmull-Rom amenity stop exactly at its named progress boundary", () => {
     expect(getCameraPose(AMENITIES_START).position).toEqual(getCameraPose(INTERIOR_END).position);
     expect(getCameraPose(GYM_STOP_START).position).toEqual([31, 14.5, 26]);
