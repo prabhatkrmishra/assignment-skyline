@@ -1,0 +1,84 @@
+import * as THREE from "three";
+
+export interface BoxPart {
+  width: number;
+  height: number;
+  depth: number;
+  x?: number;
+  y?: number;
+  z?: number;
+}
+
+/** Scene-scoped cache: shared geometries reduce GPU memory and draw-call setup. */
+export class GeometryFactory {
+  private readonly cache = new Map<string, THREE.BufferGeometry>();
+
+  box(key: string, width: number, height: number, depth: number): THREE.BoxGeometry {
+    return this.get(`box:${key}:${width}:${height}:${depth}`, () => new THREE.BoxGeometry(width, height, depth)) as THREE.BoxGeometry;
+  }
+
+  cylinder(key: string, radiusTop: number, radiusBottom: number, height: number, segments = 12): THREE.CylinderGeometry {
+    return this.get(`cylinder:${key}:${radiusTop}:${radiusBottom}:${height}:${segments}`, () =>
+      new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments)) as THREE.CylinderGeometry;
+  }
+
+  sphere(key: string, radius: number, widthSegments = 10, heightSegments = 7): THREE.SphereGeometry {
+    return this.get(`sphere:${key}:${radius}:${widthSegments}:${heightSegments}`, () =>
+      new THREE.SphereGeometry(radius, widthSegments, heightSegments)) as THREE.SphereGeometry;
+  }
+
+  torus(key: string, radius: number, tube: number, radialSegments = 8, tubularSegments = 40): THREE.TorusGeometry {
+    return this.get(`torus:${key}:${radius}:${tube}:${radialSegments}:${tubularSegments}`, () =>
+      new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments)) as THREE.TorusGeometry;
+  }
+
+  icosahedron(key: string, radius: number, detail = 0): THREE.IcosahedronGeometry {
+    return this.get(`icosahedron:${key}:${radius}:${detail}`, () => new THREE.IcosahedronGeometry(radius, detail)) as THREE.IcosahedronGeometry;
+  }
+
+  boxes(key: string, parts: readonly BoxPart[]): THREE.BufferGeometry {
+    const signature = parts.map((part) => [part.width, part.height, part.depth, part.x ?? 0, part.y ?? 0, part.z ?? 0].join(",")).join(";");
+    return this.get(`boxes:${key}:${signature}`, () => {
+      const positions: number[] = [];
+      const normals: number[] = [];
+      const uvs: number[] = [];
+
+      for (const part of parts) {
+        const indexedGeometry = new THREE.BoxGeometry(part.width, part.height, part.depth);
+        const geometry = indexedGeometry.toNonIndexed();
+        indexedGeometry.dispose();
+        geometry.translate(part.x ?? 0, part.y ?? 0, part.z ?? 0);
+        const position = geometry.getAttribute("position");
+        const normal = geometry.getAttribute("normal");
+        const uv = geometry.getAttribute("uv");
+        for (let index = 0; index < position.count; index += 1) {
+          positions.push(position.getX(index), position.getY(index), position.getZ(index));
+          normals.push(normal.getX(index), normal.getY(index), normal.getZ(index));
+          uvs.push(uv.getX(index), uv.getY(index));
+        }
+        geometry.dispose();
+      }
+
+      const merged = new THREE.BufferGeometry();
+      merged.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      merged.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+      merged.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      merged.computeBoundingBox();
+      merged.computeBoundingSphere();
+      return merged;
+    });
+  }
+
+  values(): readonly THREE.BufferGeometry[] {
+    return [...this.cache.values()];
+  }
+
+  private get<T extends THREE.BufferGeometry>(key: string, create: () => T): T {
+    let geometry = this.cache.get(key);
+    if (!geometry) {
+      geometry = create();
+      this.cache.set(key, geometry);
+    }
+    return geometry as T;
+  }
+}
