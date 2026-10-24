@@ -49,7 +49,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       if (event.key === "ArrowRight") next();
     }}>
       <div className="property-gallery__main">
-        <Image src={safeImages[activeIndex]} alt={`${title}, image ${activeIndex + 1} of ${safeImages.length}`} fill priority sizes="(max-width: 900px) 100vw, 64vw" quality={85} />
+        <Image key={activeIndex} className="property-gallery__image" src={safeImages[activeIndex]} alt={`${title}, image ${activeIndex + 1} of ${safeImages.length}`} fill priority sizes="(max-width: 900px) 100vw, 64vw" quality={85} />
         <span className="property-gallery__counter">0{activeIndex + 1} <i /> 0{safeImages.length}</span>
         <div className="property-gallery__controls">
           <button type="button" aria-label="Previous property image" onClick={previous}><ArrowLeft size={18} /></button>
