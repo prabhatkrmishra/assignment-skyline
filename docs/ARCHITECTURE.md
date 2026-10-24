@@ -64,17 +64,20 @@ The single source of truth for all scroll-driven motion is `src/lib/scroll/timel
 
 | Scene | Progress range |
 |---|---|
-| Arrival | 0.00 – 0.15 |
-| Build-up | 0.15 – 0.40 |
-| Inside a home | 0.40 – 0.65 |
-| Amenities | 0.65 – 0.88 |
-| CTA | 0.88 – 1.00 |
+| Arrival | 0 → `ARRIVAL_END` |
+| Build-up | `BUILD_START` → `BUILD_END` |
+| Inside a home | `INTERIOR_START` → `INTERIOR_END` |
+| Amenities | `AMENITIES_START` → `CTA_START` |
+| CTA | `CTA_START` → 1.00 |
+
+Ranges are normalized from `STORY_BEATS_VH`, the scroll budget in viewport heights, so the section height and every boundary move together when a beat is retimed.
 
 ### Key invariants
 
 - All transforms derive from normalized scroll progress `p ∈ [0,1]`. No timers or time-driven tweens.
 - `floorBuildState(p, floorNumber)` returns `{ assemblyProgress, verticalOffset, opacity }`. Floors start staged above their base, then settle monotonically.
 - `heroFacadeOpenProgress(p)` opens the hero floor's front facade during the interior scene and closes it at the amenity transition.
+- `dollhouseLiftProgress(p)` raises Floors 13–24 and the rooftop together to open Floor_12's ceiling, then lowers them on the way to the pool.
 - `roomLabelProgress(p, fadeStart)` staggers room labels in/out.
 - Reverse scrolling produces identical poses (determinism).
 
@@ -84,22 +87,22 @@ The single source of truth for all scroll-driven motion is `src/lib/scroll/timel
 
 - `Tower` (Group) containing `Podium`, `Floor_01` … `Floor_24`, `Rooftop`.
 - Each floor owns `Slab`, `Core`, `Facade_Front/Back/Left/Right`, `Balcony`.
-- Only `Floor_12/Facade_Front` translates along +X and fades during the interior reveal.
+- Only `Floor_12/Facade_Front` lifts straight up and fades during the interior reveal; the rest of the tower is untouched.
 - `Floor_12` additionally contains `Room_Partition_Walls`, `Room_FloorFinishes`, `Apartment_Furniture`, interior light, and 4 projected room labels.
 
 ### Camera
 
-`ScrollTimeline.ts` exports `getCameraPose(p)` returning `{ position, target }`. Three paths:
+`ScrollTimeline.ts` exports `getCameraPose(p)` returning `{ position, target }`, plus `getCameraFov(p)` and `getHandheld(p)`:
 
-1. `CAMERA_KEYFRAMES` — arrival, build, interior approach.
-2. `AMENITY_PATH` — Catmull-Rom fly-through of pool, gym, garden.
-3. `CTA_PATH` — pullback to a wide golden-hour hero shot.
+1. `CAMERA_KEYFRAMES` — one continuous cubic-Hermite spline for Arrival, Build-up and the interior crane.
+2. `AMENITY_KEYS` — orbit-authored shots (azimuth, radius, height) for pool, gym and garden, sampled with cubic-Hermite channels and true rest stops.
+3. `CTA_PATH` — pullback from the garden to a wide golden-hour hero shot.
 
-`CameraRig.tsx` applies the pose plus damped pointer parallax.
+`CameraRig.tsx` applies the pose, lens and progress-driven hand-held sway, plus damped pointer parallax.
 
 ### Rendering loop
 
-`TowerCanvas.tsx` (client) creates the WebGL renderer, builds the scene, and runs a `requestAnimationFrame` loop gated by IntersectionObserver + visibility. Labels are projected each frame. Slab hover raycasting is disabled during the interior scene.
+`TowerCanvas.tsx` (client) creates the WebGL renderer, builds the scene, and runs a `requestAnimationFrame` loop gated by IntersectionObserver + visibility. Scroll and pointer input are smoothed by the spring in `src/lib/scroll/spring.ts`; the resulting progress drives every transform, the DOM copy and the `?debug=1` overlay. The scene supplies its own fog-matched sky and a large ground plane, and the canvas fades in over the poster after the first rendered frame. Labels are projected each frame. Slab hover raycasting is disabled during the interior scene.
 
 ## 5. Database
 
