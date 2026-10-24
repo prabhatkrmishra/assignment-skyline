@@ -47,7 +47,7 @@ const scenes = [
 
 const amenitySlides = [
   { title: "Water, without a hurry.", headline: <>Water, without a <em>hurry.</em></>, description: "A calm, resort-style pool for mornings that belong to you.", image: "/images/properties/pool.webp", tag: "AMENITY 01 / POOL", icon: Waves },
-  { title: "Room to find your rhythm.", headline: <>Room to find your <em>rhythm.</em></>, description: "A considered fitness space, made for your own pace.", image: "/images/properties/living-room.webp", tag: "AMENITY 02 / WELLNESS", icon: Dumbbell },
+  { title: "Room to find your rhythm.", headline: <>Room to find your <em>rhythm.</em></>, description: "A considered fitness space, made for your own pace.", image: "/images/properties/gym.webp", tag: "AMENITY 02 / WELLNESS", icon: Dumbbell },
   { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN", icon: Building2 },
 ];
 

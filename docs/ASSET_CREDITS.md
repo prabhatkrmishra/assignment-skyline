@@ -11,5 +11,6 @@ The initial Skyline visual assets were generated specifically for this fictional
 - `public/images/properties/terrace.webp` — AI-generated terrace scene, cropped from the same original image sheet.
 - `public/images/properties/pool.webp` — AI-generated pool and landscaped amenity scene, cropped from the same original image sheet.
 - `public/images/properties/dining-room.webp` — AI-generated dining-room scene, cropped from the same original image sheet.
+- `public/images/properties/gym.webp` — original AI-generated fitness-studio scene for the amenity story and static fallback; resized and optimized to WebP.
 
 No third-party images, paid templates, or Spline runtime are used for these assets. Generated scenes represent fictional homes and should not be presented as photographs of verified properties.
