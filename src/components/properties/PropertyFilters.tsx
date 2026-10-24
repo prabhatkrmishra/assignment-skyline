@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { propertyTypes, type PropertySort } from "@/lib/properties/options";
+import { formatPriceShort } from "@/lib/properties/format";
 import { shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";
 
 export function PropertyFilters() {
@@ -18,6 +19,8 @@ export function PropertyFilters() {
   const [minDraft, setMinDraft] = useState(searchParams.get("minPrice") ?? "");
   const [maxDraft, setMaxDraft] = useState(searchParams.get("maxPrice") ?? "");
   const [priceError, setPriceError] = useState("");
+const [minFocused, setMinFocused] = useState(false);
+const [maxFocused, setMaxFocused] = useState(false);
 
   useEffect(() => {
     if (shouldDeferPendingQuerySync(pendingQueryRef.current, searchParamsString)) return;
@@ -110,11 +113,36 @@ export function PropertyFilters() {
 
       <fieldset className="filter-fieldset">
         <legend>Price range <span>₹</span></legend>
-        <div className="price-inputs">
-          <label><span className="sr-only">Minimum price in rupees</span><input aria-label="Minimum price in rupees" inputMode="numeric" type="number" min="0" value={minDraft} onChange={(event) => setMinDraft(event.target.value)} placeholder="Min price" /></label>
-          <span aria-hidden="true">—</span>
-          <label><span className="sr-only">Maximum price in rupees</span><input aria-label="Maximum price in rupees" inputMode="numeric" type="number" min="0" value={maxDraft} onChange={(event) => setMaxDraft(event.target.value)} placeholder="Max price" /></label>
-        </div>
+<div className="price-inputs">
+            <label>
+              <span className="sr-only">Minimum price in rupees</span>
+              <span className="price-inputs__prefix" aria-hidden="true">₹</span>
+              <input
+                aria-label="Minimum price in rupees"
+                inputMode="numeric"
+                type="text"
+                value={minFocused ? minDraft : (minDraft.trim() !== "" && Number.isFinite(Number(minDraft)) ? formatPriceShort(Number(minDraft)).replace(/^₹\s*/, "") : minDraft)}
+                onFocus={() => setMinFocused(true)}
+                onBlur={() => setMinFocused(false)}
+                onChange={(event) => setMinDraft(event.target.value.replace(/[^\d]/g, ""))}
+                placeholder="Min price"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Maximum price in rupees</span>
+              <span className="price-inputs__prefix" aria-hidden="true">₹</span>
+              <input
+                aria-label="Maximum price in rupees"
+                inputMode="numeric"
+                type="text"
+                value={maxFocused ? maxDraft : (maxDraft.trim() !== "" && Number.isFinite(Number(maxDraft)) ? formatPriceShort(Number(maxDraft)).replace(/^₹\s*/, "") : maxDraft)}
+                onFocus={() => setMaxFocused(true)}
+                onBlur={() => setMaxFocused(false)}
+                onChange={(event) => setMaxDraft(event.target.value.replace(/[^\d]/g, ""))}
+                placeholder="Max price"
+              />
+            </label>
+          </div>
         {priceError ? <p className="field-error" role="alert">{priceError}</p> : <p className="filter-help">Enter full rupee amounts, e.g. 15000000.</p>}
       </fieldset>
 
