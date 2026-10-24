@@ -15,8 +15,12 @@
  *
  * @module properties/options
  */
+/** Supported property types. */
 export const propertyTypes = ["Apartment", "Penthouse", "Villa", "Studio"] as const;
+/** Property type union. */
 export type PropertyType = (typeof propertyTypes)[number];
 
+/** Supported sort options. */
 export const propertySortOptions = ["price-asc", "price-desc", "newest"] as const;
+/** Property sort option union. */
 export type PropertySort = (typeof propertySortOptions)[number];

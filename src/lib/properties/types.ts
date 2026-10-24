@@ -30,6 +30,7 @@ const integerQueryParam = (minimum: number, maximum: number) => z.string()
   .transform(Number)
   .pipe(z.number().int().min(minimum).max(maximum));
 
+/** Zod schema for property search params. */
 export const propertySearchSchema = z.strictObject({
     q: z.string().trim().max(80, "Search must be 80 characters or fewer").optional().default(""),
     minPrice: integerQueryParam(0, Number.MAX_SAFE_INTEGER).optional(),
@@ -52,8 +53,10 @@ export const propertySearchSchema = z.strictObject({
     }
   });
 
+/** Parsed property search params. */
 export type PropertySearchParams = z.infer<typeof propertySearchSchema>;
 
+/** Zod schema for enquiry input. */
 export const enquirySchema = z.object({
   propertySlug: z.string().trim().min(1).max(160),
   name: z.string().trim().min(2, "Enter your full name").max(100),
@@ -69,11 +72,14 @@ export const enquirySchema = z.object({
   website: z.string().max(200).optional().default(""),
 });
 
+/** Enquiry input shape. */
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 
 /** The database schema is the single source of truth for the shared Property type. */
+/** Inferred Property row type. */
 export type Property = InferSelectModel<typeof properties>;
 
+/** Result of a property list query. */
 export interface PropertyListResult {
   items: Property[];
   total: number;
@@ -82,4 +88,5 @@ export interface PropertyListResult {
   hasMore: boolean;
 }
 
+/** API response shape for property list. */
 export type PropertyApiResponse = Pick<PropertyListResult, "items" | "total" | "page" | "hasMore">;

@@ -47,7 +47,7 @@ sqlite.pragma("foreign_keys = ON");
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("busy_timeout = 5000");
 
-/** Drizzle database instance backed by better-sqlite3. */
+/** Drizzle database instance. */
 export const db = globalForDatabase.skylineDrizzle ?? drizzle(sqlite, { schema });
 /** Raw better-sqlite3 connection. */
 export { sqlite };

@@ -19,6 +19,7 @@
 import * as THREE from "three";
 import { getCameraPose } from "@/components/landing/three-d/ScrollTimeline";
 
+/** Pointer parallax input. */
 export interface PointerParallax {
   x: number;
   y: number;

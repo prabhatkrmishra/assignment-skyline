@@ -35,6 +35,7 @@ import {
   clamp01,
 } from "@/lib/scroll/timeline";
 
+/** Camera pose (position + target). */
 export interface CameraPose {
   position: readonly [number, number, number];
   target: readonly [number, number, number];

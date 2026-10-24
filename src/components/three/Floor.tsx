@@ -30,6 +30,7 @@ function makeFloorMaterial(color: string, roughness: number, metalness = 0): THR
   return material;
 }
 
+/** Result of building one floor. */
 export interface BuiltFloor {
   group: THREE.Group;
   slab: THREE.Mesh;

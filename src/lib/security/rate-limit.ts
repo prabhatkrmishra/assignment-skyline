@@ -19,6 +19,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { sqlite } from "@/lib/db/server";
 
+/** Rate limit result. */
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;

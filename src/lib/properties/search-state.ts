@@ -16,6 +16,7 @@
  *
  * @module properties/search-state
  */
+/** Listing query updates map. */
 export type ListingQueryUpdates = Record<string, string>;
 
 /** Update listing query state deterministically and reset pagination for changed criteria. */

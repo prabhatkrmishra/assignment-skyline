@@ -15,17 +15,14 @@
  *
  * @module http/read-json-body
  */
+/** Default max JSON body bytes. */
 export const DEFAULT_MAX_JSON_BODY_BYTES = 16_384;
 
+/** Result of reading a JSON body. */
 export type JsonBodyReadResult =
   | { ok: true; value: unknown }
   | { ok: false; status: 400 | 413; error: string };
 
-/**
- * Read JSON with a hard byte limit. Content-Length is an early-rejection hint,
- * not a security boundary: clients may omit it or send a misleading value, so
- * the streamed body is counted before it is buffered and parsed.
- */
 /** Reads and parses a JSON request body with size limit. */
 export async function readJsonBody(
   request: Request,

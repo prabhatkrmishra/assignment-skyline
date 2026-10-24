@@ -19,6 +19,7 @@
  */
 import * as THREE from "three";
 
+/** A box part for merged geometry. */
 export interface BoxPart {
   width: number;
   height: number;

@@ -20,6 +20,7 @@ import * as THREE from "three";
 import { roomLabelProgress } from "@/lib/scroll/timeline";
 import type { WorldLabel } from "@/components/three/TowerScene";
 
+/** A projected room label with DOM element. */
 export interface ProjectedRoomLabel extends WorldLabel {
   element: HTMLSpanElement;
   projected: THREE.Vector3;

@@ -26,6 +26,7 @@ import { addTowerLights, createProceduralEnvironment } from "@/components/three/
 import { FLOOR_COUNT, FLOOR_HEIGHT, HERO_FLOOR_NUMBER, PODIUM_TOP, initialFloorOffset } from "@/lib/scroll/timeline";
 import type { RoomLabelSeed } from "@/components/three/HeroFloorInterior";
 
+/** Material state tracked per floor for opacity/depthWrite. */
 export interface FloorMaterialState {
   material: THREE.Material;
   baseOpacity: number;
@@ -33,6 +34,7 @@ export interface FloorMaterialState {
   isFrontFacade: boolean;
 }
 
+/** Record for a single floor in the scene. */
 export interface FloorRecord {
   number: number;
   group: THREE.Group;
@@ -44,12 +46,14 @@ export interface FloorRecord {
   materialStates: FloorMaterialState[];
 }
 
+/** A projected room label seed. */
 export interface WorldLabel {
   label: RoomLabelSeed["label"];
   position: THREE.Vector3;
   fadeStart: number;
 }
 
+/** Bundle returned by createTowerScene. */
 export interface TowerSceneBundle {
   scene: THREE.Scene;
   tower: THREE.Group;

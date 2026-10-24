@@ -18,6 +18,7 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
+/** Properties table. */
 export const properties = sqliteTable(
   "properties",
   {
@@ -53,6 +54,7 @@ export const properties = sqliteTable(
   ],
 );
 
+/** Enquiries table. */
 export const enquiries = sqliteTable(
   "enquiries",
   {
@@ -70,6 +72,7 @@ export const enquiries = sqliteTable(
   (table) => [index("enquiries_property_id_idx").on(table.propertyId), index("enquiries_created_at_idx").on(table.createdAt)],
 );
 
+/** Rate limits table. */
 export const rateLimits = sqliteTable("rate_limits", {
   key: text("key").primaryKey(),
   windowStartedAt: integer("window_started_at").notNull(),

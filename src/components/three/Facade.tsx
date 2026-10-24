@@ -21,13 +21,16 @@ import * as THREE from "three";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
 import type { BoxPart } from "@/components/three/GeometryFactory";
 
+/** Side of a facade. */
 export type FacadeSide = "Front" | "Back" | "Left" | "Right";
 
+/** Glass and frame materials for a facade. */
 export interface FacadeMaterials {
   glass: THREE.MeshStandardMaterial;
   frame: THREE.MeshStandardMaterial;
 }
 
+/** Built facade group and its materials. */
 export interface FacadeBuild {
   group: THREE.Group;
   materials: FacadeMaterials;

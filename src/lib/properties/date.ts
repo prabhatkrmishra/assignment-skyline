@@ -27,6 +27,7 @@ export function getTodayInIndia(): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+/** Validates a strict YYYY-MM-DD date against the Gregorian calendar. */
 export function isCalendarDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;

@@ -92,6 +92,7 @@ export function initialFloorOffset(floorNumber: number): number {
   return 0.42 + (floor - 1) * 0.17;
 }
 
+/** Floor build state. */
 export interface FloorBuildState {
   /** 0 while staged; 1 after the floor has assembled into its final position. */
   assemblyProgress: number;

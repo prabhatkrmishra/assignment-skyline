@@ -22,6 +22,7 @@ import * as THREE from "three";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
 import { ROOM_LABEL_STARTS } from "@/lib/scroll/timeline";
 
+/** Seed for a room label. */
 export interface RoomLabelSeed {
   label: "Living" | "Bedroom" | "Kitchen" | "Balcony";
   position: THREE.Vector3;
