@@ -1,0 +1,79 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { enquiries, properties } from "@/lib/db/schema";
+import { enquirySchema } from "@/lib/properties/types";
+import { consumeRateLimit, hashClientIp } from "@/lib/security/rate-limit";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function indiaToday(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > 16_384) return NextResponse.json({ error: "Request body is too large" }, { status: 413 });
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
+  }
+
+  const parsed = enquirySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Please correct the highlighted fields", details: parsed.error.flatten().fieldErrors },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const input = parsed.data;
+  if (input.preferredVisitDate < indiaToday()) {
+    return NextResponse.json({ error: "Preferred visit date cannot be in the past", details: { preferredVisitDate: ["Choose today or a future date"] } }, { status: 400 });
+  }
+
+  const ip = request.headers.get("x-real-ip")?.trim()
+    || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || "unknown";
+  const rate = consumeRateLimit(`enquiry:${hashClientIp(ip)}`);
+  if (!rate.allowed) {
+    return NextResponse.json({ error: "Too many enquiries. Please try again shortly." }, {
+      status: 429,
+      headers: { "Retry-After": String(rate.retryAfterSeconds), "Cache-Control": "no-store" },
+    });
+  }
+
+  // A completed honeypot receives the same generic success as a real request but is not stored.
+  if (input.website.trim()) return NextResponse.json({ ok: true, message: "Your enquiry has been received." }, { status: 201, headers: { "Cache-Control": "no-store" } });
+
+  try {
+    const property = db.select({ id: properties.id }).from(properties).where(eq(properties.slug, input.propertySlug)).get();
+    if (!property) return NextResponse.json({ error: "The selected property could not be found" }, { status: 404 });
+
+    const [created] = db.insert(enquiries).values({
+      propertyId: property.id,
+      name: input.name,
+      phone: input.phone,
+      email: input.email ?? null,
+      message: input.message,
+      preferredVisitDate: input.preferredVisitDate,
+      ipHash: hashClientIp(ip),
+    }).returning({ id: enquiries.id, createdAt: enquiries.createdAt }).all();
+
+    return NextResponse.json({ ok: true, enquiryId: created?.id, message: "Your enquiry has been received." }, {
+      status: 201,
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    console.error("POST /api/enquiries failed", error);
+    return NextResponse.json({ error: "We could not save your enquiry. Please try again." }, { status: 500, headers: { "Cache-Control": "no-store" } });
+  }
+}
