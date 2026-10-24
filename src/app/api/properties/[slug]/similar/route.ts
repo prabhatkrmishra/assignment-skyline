@@ -26,14 +26,18 @@ type RouteContext = { params: Promise<{ slug: string }> };
 
 /** Returns up to 4 similar properties matching locality or BHK. */
 export async function GET(_request: Request, context: RouteContext) {
-  const { slug } = await context.params;
+  let slug = "";
   try {
+    ({ slug } = await context.params);
     const property = getPropertyBySlug(slug);
     if (!property) return NextResponse.json({ error: "Property not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
     return NextResponse.json({ items: getSimilarPropertiesFor(property) }, {
       headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" },
     });
   } catch (error) {
+    if (error instanceof URIError) {
+      return NextResponse.json({ error: "Malformed property slug" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    }
     console.error(`GET /api/properties/${slug}/similar failed`, error);
     return NextResponse.json({ error: "Similar properties are temporarily unavailable" }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }

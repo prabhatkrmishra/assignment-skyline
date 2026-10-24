@@ -48,21 +48,22 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  const ip = request.headers.get("x-real-ip")?.trim()
-    || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim()
-    || "unknown";
-  const rate = consumeRateLimit(`enquiry:${hashClientIp(ip)}`);
-  if (!rate.allowed) {
-    return NextResponse.json({ error: "Too many enquiries. Please try again shortly." }, {
-      status: 429,
-      headers: { "Retry-After": String(rate.retryAfterSeconds), "Cache-Control": "no-store" },
-    });
-  }
-
-  // A completed honeypot receives the same generic success as a real request but is not stored.
-  if (input.website.trim()) return NextResponse.json({ ok: true, message: "Your enquiry has been received." }, { status: 201, headers: { "Cache-Control": "no-store" } });
 
   try {
+    const ip = request.headers.get("x-real-ip")?.trim()
+      || request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim()
+      || "unknown";
+    const rate = consumeRateLimit(`enquiry:${hashClientIp(ip)}`);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "Too many enquiries. Please try again shortly." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfterSeconds), "Cache-Control": "no-store" },
+      });
+    }
+
+    // A completed honeypot receives the same generic success as a real request but is not stored.
+    if (input.website.trim()) return NextResponse.json({ ok: true, message: "Your enquiry has been received." }, { status: 201, headers: { "Cache-Control": "no-store" } });
+
     const property = db.select({ id: properties.id }).from(properties).where(eq(properties.slug, input.propertySlug)).get();
     if (!property) return NextResponse.json({ error: "The selected property could not be found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
 

@@ -20,31 +20,17 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { listProperties } from "@/lib/properties/repository";
-import { propertySearchSchema } from "@/lib/properties/types";
+import { parsePropertyQuery } from "@/lib/properties/query";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Lists properties with filtering, sorting, and pagination. */
 export function GET(request: NextRequest) {
-  const params = request.nextUrl.searchParams;
-  const seen = new Set<string>();
-  for (const key of params.keys()) {
-    if (seen.has(key)) {
-      return NextResponse.json(
-        { error: "Invalid property query parameters", details: { [key]: ["Provide each query parameter only once"] } },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-    seen.add(key);
-  }
-
-  const raw = Object.fromEntries(params.entries());
-  const parsed = propertySearchSchema.safeParse(raw);
-
-  if (!parsed.success) {
+  const parsed = parsePropertyQuery(request.nextUrl.searchParams);
+  if (!parsed.ok) {
     return NextResponse.json(
-      { error: "Invalid property query parameters", details: parsed.error.flatten().fieldErrors },
+      { error: "Invalid property query parameters", details: parsed.details },
       { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
