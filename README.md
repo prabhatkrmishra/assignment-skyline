@@ -37,7 +37,9 @@ The database uses foreign keys, WAL mode, a busy timeout, indexes for common pro
 
 - `src/app/` contains the landing page, `/properties`, `/properties/[slug]`, loading/error states, metadata, and all Route Handlers.
 - `src/components/` contains the site shell, reusable property cards/forms/gallery, listing filters, and landing story.
-- `src/components/landing/three-d/` contains the isolated Three.js renderer and procedural tower scene.
+- `src/components/landing/three-d/` contains the deferred `TowerCanvas` renderer and the pure camera keyframe path.
+- `src/components/three/` contains the named tower scene graph, 24 reusable floor builders, four separate facade groups per floor, the `Floor_12` apartment interior, projected room labels, camera rig, lights, and scroll choreography.
+- `src/lib/scroll/timeline.ts` is the canonical source for all five scene ranges, amenity stops, room-label fades, floor-build timing, and the isolated hero-facade open/close progress.
 - `src/lib/db/schema.ts` is the database schema and the source for the inferred `Property` type.
 - `src/lib/properties/` holds the shared validation contracts, query-state utilities, formatting and database repository.
 - `scripts/seed.ts` creates the fictional catalogue; `drizzle/` contains schema migrations.
@@ -67,9 +69,10 @@ The enquiry API hashes the client IP before storing it. For correct per-client l
 
 1. The hero headline and local poster image render before the Three.js module is loaded.
 2. `TowerCanvas` is dynamically imported only when the landing story approaches the viewport. The scene is built with procedural meshes instead of an external high-polygon model.
-3. A single scroll-progress timeline drives arrival, floor assembly, interior reveal, three amenity stops and the final call to action; reverse scrolling reverses the scene.
-4. The renderer stops when the canvas leaves the viewport or the document becomes hidden. Device pixel ratio is capped, shadow quality is reduced on weaker devices, and a static image story is used for reduced-motion/low-power/WebGL-unavailable cases.
-5. Property images are local WebP assets with fixed layout ratios; below-the-fold images are lazy-loaded. The design uses system typography and no more than two font families.
+3. `SCENE_RANGES` in `src/lib/scroll/timeline.ts` defines Arrival (0–15%), Build-up (15–40%), Inside a home (40–65%), Amenities (65–88%), and CTA (88–100%). Camera waypoints, per-floor assembly and labels all derive from that normalized progress; reverse scrolling returns to identical poses.
+4. The scene graph has `Tower`, `Podium`, `Floor_01`–`Floor_24`, and `Rooftop`. Each floor owns separately named `Slab`, `Core`, four facade groups and a balcony. Only `Floor_12/Facade_Front` translates and fades during the interior reveal; all other floor groups and facades remain fixed and closed. Its rooms, finishes, furniture and projected labels live in `Floor_12`.
+5. The renderer stops when the canvas leaves the viewport or the document becomes hidden. Device pixel ratio is capped at 1.5, shadow quality is reduced on weaker devices, and a static image story is used for reduced-motion/low-power/WebGL-unavailable cases.
+6. Property images are local WebP assets with fixed layout ratios; below-the-fold images are lazy-loaded. The design uses system typography and no more than two font families.
 
 These are implementation strategies, **not verified performance claims**. The assignment's acceptance targets are: listing/detail initial JS ≤120 KB gzipped; landing JS before 3D ≤130 KB gzipped; lazy 3D chunk ≤200 KB gzipped; 3D model/textures ≤2 MB; mobile LCP <2.5 s; CLS <0.05; INP and TBT <200 ms; mobile Lighthouse Performance ≥90 and Accessibility/Best Practices ≥95 on the required routes. Check actual production results before claiming a target has passed.
 
