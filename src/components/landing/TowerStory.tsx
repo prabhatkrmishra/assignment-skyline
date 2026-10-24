@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUpRight, Building2, Dumbbell, Waves } from "lucide-react";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { AMENITIES_START, CTA_START, amenityIndexAtProgress, sceneIndexAtProgress } from "@/components/landing/three-d/ScrollTimeline";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
@@ -46,9 +46,9 @@ const scenes = [
 ];
 
 const amenitySlides = [
-  { title: "Water, without a hurry.", headline: <>Water, without a <em>hurry.</em></>, description: "A calm, resort-style pool for mornings that belong to you.", image: "/images/properties/pool.webp", tag: "AMENITY 01 / POOL", icon: Waves },
-  { title: "Room to find your rhythm.", headline: <>Room to find your <em>rhythm.</em></>, description: "A considered fitness space, made for your own pace.", image: "/images/properties/gym.webp", tag: "AMENITY 02 / WELLNESS", icon: Dumbbell },
-  { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN", icon: Building2 },
+  { title: "Water, without a hurry.", headline: <>Water, without a <em>hurry.</em></>, description: "A calm, resort-style pool for mornings that belong to you.", image: "/images/properties/pool.webp", tag: "AMENITY 01 / POOL" },
+  { title: "Room to find your rhythm.", headline: <>Room to find your <em>rhythm.</em></>, description: "A considered fitness space, made for your own pace.", image: "/images/properties/gym.webp", tag: "AMENITY 02 / WELLNESS" },
+  { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN" },
 ];
 
 function StaticStory() {
