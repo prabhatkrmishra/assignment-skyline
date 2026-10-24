@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { db } from "../src/lib/db/index";
 import { properties } from "../src/lib/db/schema";
 

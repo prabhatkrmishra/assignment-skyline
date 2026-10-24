@@ -22,6 +22,7 @@ export function listProperties(search: PropertySearchParams): PropertyListResult
   if (search.bhk !== undefined) filters.push(eq(properties.bhk, search.bhk));
   if (search.type !== undefined) filters.push(eq(properties.propertyType, search.type));
   if (search.furnished !== undefined) filters.push(eq(properties.furnished, search.furnished));
+  if (search.featured !== undefined) filters.push(eq(properties.featured, search.featured));
 
   const where = filters.length ? and(...filters) : undefined;
   const order = search.sort === "price-asc"

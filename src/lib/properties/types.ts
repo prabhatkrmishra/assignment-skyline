@@ -14,6 +14,7 @@ export const propertySearchSchema = z
     bhk: z.coerce.number().int().min(1).max(4).optional(),
     type: z.enum(propertyTypes).optional(),
     furnished: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
+    featured: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
     sort: z.enum(propertySortOptions).optional().default("newest"),
     page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
     limit: z.coerce.number().int().min(1).max(24).optional().default(12),
