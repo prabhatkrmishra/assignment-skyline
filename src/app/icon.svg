@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Skyline Residences">
+  <rect width="64" height="64" rx="12" fill="#1f2a22"/>
+  <path d="M12 48V28h11v20M27 48V18h12v30M43 48V34h9v14" fill="none" stroke="#f4f1e9" stroke-width="2.4"/>
+  <path d="M9 48h46" stroke="#b08d6a" stroke-width="1.6"/>
+  <path d="M32 10v4M32 10l-4-3M32 10l4-3" stroke="#b08d6a" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

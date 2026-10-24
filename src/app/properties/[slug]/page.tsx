@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: RouteContext): Promise<Metada
   if (!property) return { title: "Residence not found", robots: { index: false, follow: false } };
   const description = `${property.bhk} BHK ${property.propertyType.toLowerCase()} in ${property.locality}, ${property.city}. ${formatArea(property.areaSqft)} of considered living, priced at ${formatPrice(property.price)}.`;
   return {
-    title: `${property.title} — ${property.locality}`,
+    title: property.title,
     description,
     alternates: { canonical: `/properties/${property.slug}` },
     openGraph: {
