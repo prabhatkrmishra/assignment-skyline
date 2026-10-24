@@ -39,7 +39,8 @@ export function HeroSection() {
           src="/images/landing/tower-poster.webp"
           alt="The Skyline residential tower at sunset, its terraces planted with greenery above a landscaped pool deck"
           fill
-          priority
+          loading="eager"
+          fetchPriority="high"
           sizes="(max-width: 900px) 100vw, 48vw"
           quality={85}
         />
