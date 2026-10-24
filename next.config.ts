@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,
   compress: true,
+  // Tailwind output is small; inlining removes the render-blocking CSS request on first visit.
+  experimental: { inlineCss: true },
   serverExternalPackages: ["better-sqlite3"],
   images: {
     formats: ["image/avif", "image/webp"],
