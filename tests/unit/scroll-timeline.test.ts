@@ -14,6 +14,7 @@ import {
   POOL_STOP_START,
   FLOOR_HEIGHT,
   HERO_FLOOR_NUMBER,
+  INTERIOR_CAMERA_APPROACH_PROGRESS,
   INTERIOR_END,
   INTERIOR_START,
   floorBuildState,
@@ -186,12 +187,15 @@ describe("camera choreography", () => {
 
   it("places the interior camera at an elevated three-quarter angle over Floor_12", () => {
     const pose = getCameraPose(INTERIOR_END);
+    const approachPose = getCameraPose(INTERIOR_CAMERA_APPROACH_PROGRESS);
     const horizontalDistance = Math.hypot(
       pose.position[0] - pose.target[0],
       pose.position[2] - pose.target[2],
     );
     const verticalDistance = pose.position[1] - pose.target[1];
     expect(verticalDistance / horizontalDistance).toBeGreaterThan(0.5);
+    expect(pose.position[1]).toBeLessThanOrEqual(approachPose.position[1]);
+    expect(pose.position[2]).toBeLessThan(approachPose.position[2]);
   });
 
   it("hits each Catmull-Rom amenity stop exactly at its named progress boundary", () => {
