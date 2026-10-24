@@ -649,8 +649,8 @@ textarea.form-control { min-height: 118px; resize: vertical; line-height: 1.7; }
 }
 
 /* Skip animation: top of the cinematic section, always reachable while it is on screen. */
-.story-skip { position: absolute; z-index: 7; top: calc(2.6rem - 5px); left: var(--page-padding); display: inline-flex; align-items: center; gap: .7rem; min-height: 44px; padding: .65rem 1rem .65rem 1.15rem; border: 1px solid rgba(255,255,255,.6); color: var(--ink); background: rgba(244,241,233,.95); font-size: .76rem; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); transition: background .2s ease, transform .2s ease; }
-.story-skip:hover { background: #fff; transform: translateY(1px); }
+.story-skip { position: absolute; z-index: 7; top: calc(2.6rem - 5px); left: 50%; display: inline-flex; align-items: center; gap: .7rem; min-height: 44px; padding: .65rem 1rem .65rem 1.15rem; border: 1px solid rgba(255,255,255,.5); color: var(--ink); background: rgba(244,241,233,.6); font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap; backdrop-filter: blur(12px) saturate(1.1); box-shadow: 0 6px 24px rgba(16,24,18,.14); transform: translateX(-50%); transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+.story-skip:hover { background: rgba(244,241,233,.82); border-color: rgba(255,255,255,.72); transform: translate(-50%, 1px); }
 .story-skip:focus-visible { outline: 2px solid #d9c3a3; outline-offset: 3px; }
 .story-static-scenes { position: relative; }
 .story-static-scenes > .story-skip { top: 1.4rem; }
