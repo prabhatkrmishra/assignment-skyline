@@ -14,7 +14,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/prepare-db.ts && drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
     "analyze": "next experimental-analyze --output"
