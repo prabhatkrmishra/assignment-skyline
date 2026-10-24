@@ -35,7 +35,10 @@ export const enquirySchema = z.object({
   propertySlug: z.string().trim().min(1).max(160),
   name: z.string().trim().min(2, "Enter your full name").max(100),
   phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
-  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email address").max(160)]).optional().transform((value) => value || undefined),
+  email: z.preprocess(
+    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+    z.string().trim().email("Enter a valid email address").max(160).optional(),
+  ),
   message: z.string().trim().min(10, "Please share at least 10 characters").max(1_000),
   preferredVisitDate: z.string()
     .refine(isCalendarDate, "Choose a valid calendar date in YYYY-MM-DD format")

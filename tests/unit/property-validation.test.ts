@@ -36,8 +36,14 @@ describe("enquirySchema", () => {
     website: "",
   };
 
-  it("accepts an optional email and a valid Indian mobile number", () => {
+  it("accepts an empty optional email and a valid Indian mobile number", () => {
     expect(enquirySchema.parse(valid).email).toBeUndefined();
+    expect(enquirySchema.parse({ ...valid, email: "   " }).email).toBeUndefined();
+    expect(enquirySchema.parse({ ...valid, email: "person@example.com" }).email).toBe("person@example.com");
+  });
+
+  it("rejects a non-empty malformed optional email", () => {
+    expect(enquirySchema.safeParse({ ...valid, email: "not-an-email" }).success).toBe(false);
   });
 
   it("rejects impossible dates and accepts leap days only in leap years", () => {
