@@ -6,8 +6,7 @@ import { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 export { propertySortOptions, propertyTypes } from "@/lib/properties/options";
 export type { PropertySort, PropertyType } from "@/lib/properties/options";
 
-export const propertySearchSchema = z
-  .object({
+export const propertySearchSchema = z.strictObject({
     q: z.string().trim().max(80, "Search must be 80 characters or fewer").optional().default(""),
     minPrice: z.coerce.number().int().min(0).optional(),
     maxPrice: z.coerce.number().int().min(0).optional(),
@@ -19,7 +18,6 @@ export const propertySearchSchema = z
     page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
     limit: z.coerce.number().int().min(1).max(24).optional().default(12),
   })
-  .strict()
   .superRefine((value, context) => {
     if (value.minPrice !== undefined && value.maxPrice !== undefined && value.minPrice > value.maxPrice) {
       context.addIssue({
