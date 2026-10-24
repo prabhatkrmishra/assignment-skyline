@@ -1,4 +1,21 @@
-/** Return the current calendar date in the timezone required by the assignment. */
+/**
+ * @fileoverview Date helpers for Indian calendar dates.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Date helpers: getTodayInIndia returns YYYY-MM-DD; isCalendarDate validates
+ * a strict Gregorian date string.
+ *
+ * @scope
+ * - Date validation for enquiry forms.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/date
+ */
 export function getTodayInIndia(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -10,7 +27,6 @@ export function getTodayInIndia(): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-/** Validate a strict YYYY-MM-DD date against the Gregorian calendar. */
 export function isCalendarDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;

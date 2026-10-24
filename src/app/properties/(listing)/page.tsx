@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Properties listing page.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Properties listing page with search, filters, and pagination.
+ * Server component: reads searchParams, validates, queries repository,
+ * renders filters + grid + pagination. Query string is source of truth.
+ *
+ * @scope
+ * - Property discovery and filtering.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/properties/listing
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -39,6 +58,7 @@ function normalizeSearchParams(input: Record<string, string | string[] | undefin
   return normalized;
 }
 
+/** Properties listing page with search, filters, and pagination. */
 export default async function PropertiesPage({ searchParams }: { searchParams: SearchParams }) {
   const normalized = normalizeSearchParams(await searchParams);
   const raw = normalized ?? {};

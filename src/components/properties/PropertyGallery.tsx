@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Image gallery with enlarged view.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Image gallery with enlarged view for property detail.
+ *
+ * @scope
+ * - Property detail and enquiry.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/PropertyGallery
+ */
 "use client";
 
 import Image from "next/image";
@@ -9,6 +26,7 @@ interface PropertyGalleryProps {
   title: string;
 }
 
+/** Image gallery with enlarged view for a property detail page. */
 export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const safeImages = images.length ? images : ["/images/properties/living-room.webp"];
   const [active, setActive] = useState(0);

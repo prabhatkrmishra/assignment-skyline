@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Root layout.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Root layout: loads fonts, theme provider, global metadata, and wraps all routes.
+ *
+ * @scope
+ * - Global shell and providers.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/layout
+ */
 import type { Metadata, Viewport } from "next";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -36,6 +53,7 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+/** Root layout: fonts, theme provider, global metadata. */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en-IN" data-scroll-behavior="smooth">

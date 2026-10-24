@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Scene-scoped cached geometry factory.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Caches BoxGeometry, CylinderGeometry, etc. by signature to reduce GPU memory
+ * and draw-call setup. The boxes() method merges multiple box parts into one
+ * non-indexed BufferGeometry.
+ *
+ * @scope
+ * - Procedural tower geometry and materials.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/GeometryFactory
+ */
 import * as THREE from "three";
 
 export interface BoxPart {
@@ -9,7 +28,7 @@ export interface BoxPart {
   z?: number;
 }
 
-/** Scene-scoped cache: shared geometries reduce GPU memory and draw-call setup. */
+/** Scene-scoped geometry cache: shared geometries reduce GPU memory and draw-call setup. */
 export class GeometryFactory {
   private readonly cache = new Map<string, THREE.BufferGeometry>();
 

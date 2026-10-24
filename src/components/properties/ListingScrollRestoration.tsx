@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Restores scroll position on listing navigation.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Restores scroll position on listing navigation.
+ *
+ * @scope
+ * - Property discovery and filtering.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/ListingScrollRestoration
+ */
 "use client";
 
 import { useEffect } from "react";
@@ -5,6 +22,7 @@ import { useEffect } from "react";
 const POSITION_KEY = "skyline:listing-position";
 const PENDING_KEY = "skyline:listing-position-pending";
 
+/** Restores scroll position on listing navigation. */
 export function ListingScrollRestoration() {
   useEffect(() => {
     const restore = () => {

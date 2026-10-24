@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Property detail page.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Property detail page: gallery, specs, amenities, enquiry form.
+ * generateMetadata for SEO. Unknown slug renders 404.
+ *
+ * @scope
+ * - Property detail and enquiry.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/properties/detail
+ */
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +32,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
+/** Generates metadata for a property detail page. */
 export async function generateMetadata({ params }: RouteContext): Promise<Metadata> {
   const { slug } = await params;
   const property = getPropertyBySlug(slug);
@@ -32,6 +51,7 @@ export async function generateMetadata({ params }: RouteContext): Promise<Metada
   };
 }
 
+/** Property detail page: gallery, specs, amenities, enquiry form. */
 export default async function PropertyDetailPage({ params }: RouteContext) {
   const { slug } = await params;
   const property = getPropertyBySlug(slug);

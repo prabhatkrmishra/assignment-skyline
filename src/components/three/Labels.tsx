@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Projected room labels for the hero floor.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Creates DOM label elements and projects their 3D anchors to screen space
+ * each frame, fading in/out per roomLabelProgress.
+ *
+ * @scope
+ * - Scroll-synchronized chapter transitions.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/Labels
+ */
 import * as THREE from "three";
 import { roomLabelProgress } from "@/lib/scroll/timeline";
 import type { WorldLabel } from "@/components/three/TowerScene";
@@ -7,6 +25,7 @@ export interface ProjectedRoomLabel extends WorldLabel {
   projected: THREE.Vector3;
 }
 
+/** Creates DOM label elements for each room label and returns projected label records. */
 export function mountRoomLabels(root: HTMLElement, labels: readonly WorldLabel[]): ProjectedRoomLabel[] {
   return labels.map((label) => {
     const element = document.createElement("span");
@@ -39,6 +58,7 @@ export function updateRoomLabels(
   }
 }
 
+/** Removes room label elements from the DOM. */
 export function unmountRoomLabels(labels: readonly ProjectedRoomLabel[]): void {
   labels.forEach(({ element }) => element.remove());
 }

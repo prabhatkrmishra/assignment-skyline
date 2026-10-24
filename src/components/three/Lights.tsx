@@ -1,6 +1,24 @@
+/**
+ * @fileoverview Scene lighting and procedural environment map.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Creates hemisphere/sun/cool-fill/rim lights with shadow config, plus a
+ * procedural equirectangular sky texture. No HDR download required.
+ *
+ * @scope
+ * - Architectural lighting and environmental composition.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/Lights
+ */
 import * as THREE from "three";
 
-/** Creates a tiny procedural equirectangular environment; no HDR download is required. */
+/** Creates a tiny procedural equirectangular environment map (no HDR download required). */
 export function createProceduralEnvironment(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
@@ -32,6 +50,7 @@ export function createProceduralEnvironment(): THREE.CanvasTexture {
   return texture;
 }
 
+/** Adds hemisphere, sun, cool fill, and rim lights; configures shadows. */
 export function addTowerLights(scene: THREE.Scene, shadowsEnabled: boolean): THREE.DirectionalLight {
   const hemisphere = new THREE.HemisphereLight("#f7ead6", "#58665e", 1.75);
   hemisphere.name = "WarmSky_CoolGround_Fill";

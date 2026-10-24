@@ -1,9 +1,29 @@
+/**
+ * @fileoverview Floor builder: slab, core, four facades, balcony.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Creates one independently-addressable floor group with a slab, lift/stair
+ * core, four facade groups (Front/Back/Left/Right), and a balcony with glass
+ * railing. Hero floor (12) additionally receives the apartment interior.
+ *
+ * @scope
+ * - Procedural tower geometry and materials.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/Floor
+ */
 import * as THREE from "three";
 import { createFacade, collectMaterials } from "@/components/three/Facade";
 import { addHeroFloorInterior, type RoomLabelSeed } from "@/components/three/HeroFloorInterior";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
 import { FLOOR_DEPTH, FLOOR_WIDTH, HERO_FLOOR_NUMBER } from "@/lib/scroll/timeline";
 
+/** Creates a standard floor material with authored base opacity of 1. */
 function makeFloorMaterial(color: string, roughness: number, metalness = 0): THREE.MeshStandardMaterial {
   const material = new THREE.MeshStandardMaterial({ color, roughness, metalness, transparent: true, depthWrite: true });
   material.userData.skylineBaseOpacity = 1;

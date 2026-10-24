@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Zod schemas and inferred types for properties/enquiries.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * propertySearchSchema, enquirySchema, PropertySearchParams, EnquiryInput,
+ * Property, PropertyListResult. Shared by client and server.
+ *
+ * @scope
+ * - Request validation and shared types.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/types
+ */
 import { z } from "zod";
 import type { InferSelectModel } from "drizzle-orm";
 import type { properties } from "@/lib/db/schema";

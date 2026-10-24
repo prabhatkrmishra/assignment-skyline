@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Database schema: properties, enquiries, rate_limits.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Drizzle table definitions; source for inferred Property type.
+ *
+ * @scope
+ * - Database schema.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module db/schema
+ */
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 

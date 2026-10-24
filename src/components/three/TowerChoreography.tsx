@@ -1,7 +1,27 @@
+/**
+ * @fileoverview Applies scroll-driven tower and facade state.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * For each floor: vertical offset, material opacity/depthWrite based on build
+ * state and hero facade open progress. Only the hero floor's front facade
+ * translates along +X during the interior reveal.
+ *
+ * @scope
+ * - Three-dimensional camera choreography.
+ * - Scroll-synchronized chapter transitions.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/TowerChoreography
+ */
 import { HERO_FACADE_SLIDE_DISTANCE, HERO_FLOOR_NUMBER, floorBuildState, heroFacadeOpenProgress } from "@/lib/scroll/timeline";
 import type { FloorRecord } from "@/components/three/TowerScene";
 
-/** Apply the complete tower/facade state for one normalized scroll position. */
+/** Applies the complete tower/facade state for one normalized scroll position. */
 export function applyTowerScrollProgress(floors: readonly FloorRecord[], progress: number): void {
   for (const floor of floors) {
     const state = floorBuildState(progress, floor.number);

@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Fetches and renders six featured homes on the landing page.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Client component that calls /api/properties and renders PropertyCard grid.
+ *
+ * @scope
+ * - Landing-page visual design.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module landing/FeaturedHomes
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,6 +24,7 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGridSkeleton } from "@/components/properties/PropertyGridSkeleton";
 import type { Property, PropertyApiResponse } from "@/lib/properties/types";
 
+/** Fetches and renders six featured homes on the landing page. */
 export function FeaturedHomes() {
   const [items, setItems] = useState<Property[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");

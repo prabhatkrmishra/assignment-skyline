@@ -1,5 +1,23 @@
+/**
+ * @fileoverview Loading skeleton for the properties listing.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Loading skeleton shown while the properties listing loads.
+ *
+ * @scope
+ * - Loading UX.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/properties/loading
+ */
 import { PropertyGridSkeleton } from "@/components/properties/PropertyGridSkeleton";
 
+/** Loading skeleton for the properties listing. */
 export default function PropertiesLoading() {
   return (
     <main id="main-content" className="listing-page" aria-busy="true">

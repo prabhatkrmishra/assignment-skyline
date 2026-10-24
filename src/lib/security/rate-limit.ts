@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Per-IP rate limiting for enquiries.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * hashClientIp, consumeRateLimit (sliding window, max requests per window).
+ *
+ * @scope
+ * - Enquiry rate limiting.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module security/rate-limit
+ */
 import "server-only";
 import { createHash } from "node:crypto";
 import { sqlite } from "@/lib/db/server";
@@ -8,6 +25,7 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
+/** Hashes a client IP for storage. */
 export function hashClientIp(ip: string): string {
   const salt = process.env.RATE_LIMIT_SALT ?? "skyline-local-rate-limit-v1";
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
@@ -18,6 +36,7 @@ export function hashClientIp(ip: string): string {
  * counter. That avoids a deferred read-to-write lock upgrade race across app workers.
  * The counter lives in the database, not a process-local Map that resets on restart.
  */
+/** Consumes a rate-limit token; returns allowed status. */
 export function consumeRateLimit(key: string, maxRequests = 5, windowMs = 10 * 60 * 1000): RateLimitResult {
   const now = Date.now();
   const transaction = sqlite.transaction(() => {

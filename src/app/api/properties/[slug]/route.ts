@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Single property by slug.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * GET /api/properties/:slug: returns property JSON or 404 for unknown slugs.
+ *
+ * @scope
+ * - Property detail retrieval.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module api/properties/[slug]
+ */
 import { NextResponse } from "next/server";
 import { getPropertyBySlug } from "@/lib/properties/repository";
 
@@ -6,6 +23,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
+/** Returns a single property by slug (404 if not found). */
 export async function GET(_request: Request, context: RouteContext) {
   const { slug } = await context.params;
   try {

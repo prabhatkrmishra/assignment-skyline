@@ -1,3 +1,23 @@
+/**
+ * @fileoverview Furnished apartment interior for Floor 12.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Adds room finishes, partition walls, furniture, bathroom, balcony details,
+ * an interior warm light, and projected room labels. All geometry stays in
+ * the floor's local space. Only built when floorNumber === HERO_FLOOR_NUMBER.
+ *
+ * @scope
+ * - Procedural tower geometry and materials.
+ * - Scroll-synchronized chapter transitions.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/HeroFloorInterior
+ */
 import * as THREE from "three";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
 import { ROOM_LABEL_STARTS } from "@/lib/scroll/timeline";

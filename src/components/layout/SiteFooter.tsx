@@ -1,6 +1,24 @@
+/**
+ * @fileoverview Site footer with links and credits.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Site footer with links and credits.
+ *
+ * @scope
+ * - Landing-page visual design.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module layout/SiteFooter
+ */
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+/** Site footer with links and credits. */
 export function SiteFooter() {
   return (
     <footer className="site-footer">

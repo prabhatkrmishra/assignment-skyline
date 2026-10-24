@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Facade builder: glass panel and frame grid per side.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Each facade is its own group with a transparent glass panel and a frame grid
+ * (mullions). Tracks authored opacity for the choreography opacity multiplier.
+ * Only the hero floor's front facade translates/fades during interior reveal.
+ *
+ * @scope
+ * - Procedural tower geometry and materials.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/Facade
+ */
 import * as THREE from "three";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
 import type { BoxPart } from "@/components/three/GeometryFactory";
@@ -14,6 +33,7 @@ export interface FacadeBuild {
   materials: FacadeMaterials;
 }
 
+/** Tracks authored opacity on a facade material and configures transparency/depthWrite accordingly. */
 function trackOpacity(material: THREE.Material, opacity: number): void {
   material.userData.skylineBaseOpacity = opacity;
   material.transparent = opacity < 0.999;
@@ -104,6 +124,7 @@ export function createFacade(
   return { group, materials: { glass, frame } };
 }
 
+/** Collects all unique materials within a subtree (used for per-floor opacity control). */
 export function collectMaterials(root: THREE.Object3D): Set<THREE.Material> {
   const materials = new Set<THREE.Material>();
   root.traverse((object) => {

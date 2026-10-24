@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Seed data generator for fictional properties.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Builds 60 fictional property records across Indian localities.
+ *
+ * @scope
+ * - Database seeding.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module db/seed-data
+ */
 import type { InferInsertModel } from "drizzle-orm";
 import type { properties } from "@/lib/db/schema";
 

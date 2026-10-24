@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Camera rig applying scroll pose plus damped pointer parallax.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Reads getCameraPose(progress) and applies pointer parallax with exponential
+ * damping. Returns the look-at target.
+ *
+ * @scope
+ * - Camera choreography.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/CameraRig
+ */
 import * as THREE from "three";
 import { getCameraPose } from "@/components/landing/three-d/ScrollTimeline";
 

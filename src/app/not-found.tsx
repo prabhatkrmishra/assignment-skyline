@@ -1,6 +1,24 @@
+/**
+ * @fileoverview 404 page.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * 404 page for unknown routes.
+ *
+ * @scope
+ * - Error UX.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/not-found
+ */
 import Link from "next/link";
 import { ArrowLeft, House } from "lucide-react";
 
+/** 404 page for unknown routes. */
 export default function NotFound() {
   return (
     <main id="main-content" className="not-found-page page-gutter">

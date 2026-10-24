@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Sidebar filters for the property listing.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Sidebar filters: search, price, BHK, type, furnishing, sort.
+ *
+ * @scope
+ * - Property discovery and filtering.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/PropertyFilters
+ */
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -7,6 +24,7 @@ import { propertyTypes, type PropertySort } from "@/lib/properties/options";
 import { formatPriceShort } from "@/lib/properties/format";
 import { shouldDeferPendingQuerySync, updateListingQuery } from "@/lib/properties/search-state";
 
+/** Sidebar filters for the property listing (search, price, BHK, type, furnishing, sort). */
 export function PropertyFilters() {
   const router = useRouter();
   const pathname = usePathname();

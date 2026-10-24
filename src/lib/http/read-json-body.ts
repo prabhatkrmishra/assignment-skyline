@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Safe JSON body reader with size limit.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * readJsonBody parses request body with a byte cap; returns typed result.
+ *
+ * @scope
+ * - Request body parsing.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module http/read-json-body
+ */
 export const DEFAULT_MAX_JSON_BODY_BYTES = 16_384;
 
 export type JsonBodyReadResult =
@@ -9,6 +26,7 @@ export type JsonBodyReadResult =
  * not a security boundary: clients may omit it or send a misleading value, so
  * the streamed body is counted before it is buffered and parsed.
  */
+/** Reads and parses a JSON request body with size limit. */
 export async function readJsonBody(
   request: Request,
   maxBytes = DEFAULT_MAX_JSON_BODY_BYTES,

@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Card displaying a single property summary.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Card displaying a single property summary in listing grids.
+ *
+ * @scope
+ * - Property discovery and filtering.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/PropertyCard
+ */
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -11,6 +28,7 @@ interface PropertyCardProps {
   showIndex?: boolean;
 }
 
+/** Card displaying a single property summary in listing grids. */
 export function PropertyCard({ property, index, showIndex = false }: PropertyCardProps) {
   const cover = property.images[0] ?? "/images/properties/living-room.webp";
   return (

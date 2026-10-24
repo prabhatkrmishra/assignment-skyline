@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Landing five-scene tower story with lazy 3D canvas.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Manages scroll progress, scene/amenity state, reduced-motion and low-power
+ * fallbacks. Dynamically imports TowerCanvas when the story approaches viewport.
+ *
+ * @scope
+ * - Landing-page visual design.
+ * - 3D loading, fallback behaviour and performance.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module landing/TowerStory
+ */
 "use client";
 
 import dynamic from "next/dynamic";
@@ -83,6 +102,7 @@ function StaticStory() {
   );
 }
 
+/** Landing page five-scene tower story with lazy 3D canvas. */
 export function TowerStory() {
   const storyRef = useRef<HTMLElement>(null);
   const storyCopyRef = useRef<HTMLDivElement>(null);

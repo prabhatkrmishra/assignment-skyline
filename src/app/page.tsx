@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Landing page: poster-first tower story plus featured homes.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Landing page: renders TowerStory (lazy 3D) and FeaturedHomes. Metadata for SEO.
+ *
+ * @scope
+ * - Landing-page visual design.
+ * - 3D loading, fallback behaviour and performance.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/page
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +33,7 @@ export const metadata: Metadata = {
   },
 };
 
+/** Landing page: poster-first tower story + featured homes. */
 export default function HomePage() {
   return (
     <main id="main-content">

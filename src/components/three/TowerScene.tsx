@@ -1,3 +1,24 @@
+/**
+ * @fileoverview Procedural tower scene graph builder.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Builds the full Skyline scene: podium, 24 floors, rooftop, surroundings
+ * (neighbouring blocks, park, house blocks, amenities), lights, and environment.
+ * Each floor owns Slab, Core, four facades, balcony. Only Floor_12's front
+ * facade is animated. Materials are tracked for per-floor opacity control.
+ *
+ * @scope
+ * - Procedural tower geometry and materials.
+ * - Architectural lighting and environmental composition.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module three/TowerScene
+ */
 import * as THREE from "three";
 import { createFloor } from "@/components/three/Floor";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
@@ -428,6 +449,7 @@ function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shado
   createAmenityCampus(scene, geometry, shadowed);
 }
 
+/** Builds the full tower scene graph. */
 export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.Texture): TowerSceneBundle {
   const scene = new THREE.Scene();
   scene.name = "Skyline_Scene";

@@ -1,9 +1,28 @@
+/**
+ * @fileoverview Property data access layer.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * listProperties (filtered/paginated), getPropertyBySlug, getSimilarPropertiesFor.
+ * Uses Drizzle ORM against SQLite.
+ *
+ * @scope
+ * - Property data access.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/repository
+ */
 import "server-only";
 import { and, asc, count, desc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db/server";
 import { properties } from "@/lib/db/schema";
 import type { Property, PropertyListResult, PropertySearchParams } from "@/lib/properties/types";
 
+/** Lists properties matching the search params with pagination. */
 export function listProperties(search: PropertySearchParams): PropertyListResult {
   const filters = [];
 
@@ -45,11 +64,13 @@ export function listProperties(search: PropertySearchParams): PropertyListResult
   };
 }
 
+/** Returns a property by slug, or null. */
 export function getPropertyBySlug(slug: string): Property | null {
   const property = db.select().from(properties).where(eq(properties.slug, slug)).get();
   return (property as Property | undefined) ?? null;
 }
 
+/** Returns up to 4 similar properties. */
 export function getSimilarPropertiesFor(current: Pick<Property, "slug" | "locality" | "bhk">): Property[] {
   return db.select().from(properties)
     .where(and(

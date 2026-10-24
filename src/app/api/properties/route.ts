@@ -1,3 +1,23 @@
+/**
+ * @fileoverview Property listing endpoint.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * GET /api/properties: parses query params (q, minPrice, maxPrice, bhk, type,
+ * furnished, sort, page, limit), validates with Zod, returns paginated filtered
+ * results with Cache-Control headers. Maximum API limit 24; invalid params → 400.
+ *
+ * @scope
+ * - Property search and pagination.
+ * - Query validation and caching headers.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module api/properties
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import { listProperties } from "@/lib/properties/repository";
 import { propertySearchSchema } from "@/lib/properties/types";
@@ -5,6 +25,7 @@ import { propertySearchSchema } from "@/lib/properties/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Lists properties with filtering, sorting, and pagination. */
 export function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const seen = new Set<string>();

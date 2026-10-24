@@ -1,3 +1,23 @@
+/**
+ * @fileoverview Enquiry submission endpoint.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Handles POST /api/enquiries. Validates input with the shared Zod schema,
+ * applies per-IP rate limiting and honeypot checks, persists to SQLite.
+ * Returns 201 on success, 400 on validation failure, 429 on rate limit.
+ *
+ * @scope
+ * - Enquiry persistence and rate limiting.
+ * - Request validation and error responses.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module api/enquiries
+ */
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/server";
@@ -9,6 +29,7 @@ import { readJsonBody } from "@/lib/http/read-json-body";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Creates a new enquiry (rate-limited, honeypot-protected). */
 export async function POST(request: Request) {
   const body = await readJsonBody(request);
   if (!body.ok) {

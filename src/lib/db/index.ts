@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Database connection: better-sqlite3 plus Drizzle.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Configures WAL mode, busy timeout, foreign keys. Exports db and sqlite.
+ *
+ * @scope
+ * - Database connection.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module db/index
+ */
 import { loadEnvConfig } from "@next/env";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
@@ -30,7 +47,9 @@ sqlite.pragma("foreign_keys = ON");
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("busy_timeout = 5000");
 
+/** Drizzle database instance backed by better-sqlite3. */
 export const db = globalForDatabase.skylineDrizzle ?? drizzle(sqlite, { schema });
+/** Raw better-sqlite3 connection. */
 export { sqlite };
 
 if (process.env.NODE_ENV !== "production") {

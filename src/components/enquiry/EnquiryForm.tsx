@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Client enquiry form with validation and submission.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * EnquiryForm validates input, submits to /api/enquiries, shows success/error
+ * states. Used on property detail pages.
+ *
+ * @scope
+ * - Property detail and enquiry.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module enquiry/EnquiryForm
+ */
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
@@ -14,6 +32,7 @@ type EnquiryFields = {
 };
 type FieldErrors = Partial<Record<keyof EnquiryFields | "propertySlug", string>>;
 
+/** Enquiry form for requesting a private visit to a property. */
 export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: { propertySlug: string; propertyTitle: string; minimumVisitDate: string }) {
   const [values, setValues] = useState<EnquiryFields>({ name: "", phone: "", email: "", message: "", preferredVisitDate: "", website: "" });
   const [errors, setErrors] = useState<FieldErrors>({});

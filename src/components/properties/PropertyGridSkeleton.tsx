@@ -1,9 +1,27 @@
+/**
+ * @fileoverview Skeleton placeholder for the property grid.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Skeleton placeholder for the property grid while loading.
+ *
+ * @scope
+ * - Property discovery and filtering.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module properties/PropertyGridSkeleton
+ */
 interface PropertyGridSkeletonProps {
   count?: number;
   variant?: "featured" | "listing";
   label?: string;
 }
 
+/** Skeleton placeholder for the property grid while loading. */
 export function PropertyGridSkeleton({
   count = 12,
   variant = "listing",

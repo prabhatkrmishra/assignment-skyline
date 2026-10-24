@@ -1,9 +1,27 @@
+/**
+ * @fileoverview Global error boundary.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Global error boundary for the App Router.
+ *
+ * @scope
+ * - Error UX.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module app/error
+ */
 "use client";
 
 import { useEffect } from "react";
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 
+/** Global error boundary. */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error("Skyline page error", error); }, [error]);
   return (

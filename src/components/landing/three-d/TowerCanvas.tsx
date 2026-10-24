@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Deferred WebGL renderer for the procedural tower scene.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Creates renderer, builds scene, runs render loop gated by intersection and
+ * visibility. Handles pointer parallax, slab hover, room labels, resize.
+ *
+ * @scope
+ * - 3D loading, fallback behaviour and performance.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module landing/three-d/TowerCanvas
+ */
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
@@ -13,6 +31,7 @@ interface TowerCanvasProps {
   onUnsupported: () => void;
 }
 
+/** Deferred WebGL renderer for the procedural tower scene. */
 export default function TowerCanvas({ scrollContainerRef, onUnsupported }: TowerCanvasProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Similar properties endpoint.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * GET /api/properties/:slug/similar: returns up to 4 homes matching locality
+ * or BHK for the given property.
+ *
+ * @scope
+ * - Similar property recommendations.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module api/properties/[slug]/similar
+ */
 import { NextResponse } from "next/server";
 import { getPropertyBySlug, getSimilarPropertiesFor } from "@/lib/properties/repository";
 
@@ -6,6 +24,7 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
+/** Returns up to 4 similar properties matching locality or BHK. */
 export async function GET(_request: Request, context: RouteContext) {
   const { slug } = await context.params;
   try {

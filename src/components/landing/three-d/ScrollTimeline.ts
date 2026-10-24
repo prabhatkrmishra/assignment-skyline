@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Pure camera keyframe path for the tower story.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Exports getCameraPose and updateCameraPath. Defines CAMERA_KEYFRAMES,
+ * AMENITY_PATH (Catmull-Rom), CTA_PATH. Deterministic and reversible.
+ *
+ * @scope
+ * - Three-dimensional camera choreography.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module landing/three-d/ScrollTimeline
+ */
 import {
   AMENITIES_START,
   ARRIVAL_ORBIT_MIDPOINT,

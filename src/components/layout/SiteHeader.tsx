@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Site header with navigation and theme toggle.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript
+ *
+ * @description
+ * Site header with navigation and theme toggle.
+ *
+ * @scope
+ * - Landing-page visual design.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module layout/SiteHeader
+ */
 import Link from "next/link";
 import { ArrowUpRight, Menu } from "lucide-react";
 
@@ -7,6 +24,7 @@ const links = [
   { href: "/#journal", label: "Our philosophy" },
 ];
 
+/** Site header with navigation and theme toggle. */
 export function SiteHeader() {
   return (
     <header className="site-header">

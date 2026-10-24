@@ -1,7 +1,21 @@
 /**
- * Canonical scroll choreography for Skyline's five-scene tower story.
- * All scene/floor transforms are derived from normalized scroll progress; do not
- * add timers or time-driven tweens here.
+ * @fileoverview Canonical scroll choreography for the tower story.
+ *
+ * @project Skyline Luxury Residences
+ * @type {FrontendEngineeringTask}
+ * @framework Next.js (App Router) + TypeScript + Three.js
+ *
+ * @description
+ * Defines scene ranges, floor build state, hero facade open/close progress,
+ * room label fades, camera constants, and amenity stops. Single source of
+ * truth for all scroll-driven motion.
+ *
+ * @scope
+ * - Scroll choreography and scene timing.
+ *
+ * Do not refactor unrelated routes or APIs.
+ *
+ * @module scroll/timeline
  */
 export const SCENE_RANGES = Object.freeze({
   arrival: Object.freeze({ start: 0, end: 0.15 }),
@@ -55,6 +69,7 @@ export const PREBUILD_SPREAD_START = 0.12;
 const BUILD_STAGGER_WINDOW = (BUILD_END - BUILD_START) * 0.64;
 const FLOOR_ASSEMBLY_DURATION = (BUILD_END - BUILD_START) - BUILD_STAGGER_WINDOW;
 
+/** Clamps a value to [0,1], treating non-finite as 0. */
 export const clamp01 = (value: number): number =>
   Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 
@@ -71,6 +86,7 @@ export function easePower2Out(value: number): number {
   return 1 - (1 - t) * (1 - t);
 }
 
+/** Vertical spread offset for a floor during late arrival. */
 export function initialFloorOffset(floorNumber: number): number {
   const floor = Math.min(FLOOR_COUNT, Math.max(1, Math.floor(floorNumber)));
   return 0.42 + (floor - 1) * 0.17;
@@ -89,6 +105,7 @@ export interface FloorBuildState {
  * Deterministic floor build state. The small late-Arrival spread is the continuous
  * lead-in to Scene 2, avoiding a discontinuous jump exactly at progress 0.15.
  */
+/** Computes build/assembly state for a floor at a given progress. */
 export function floorBuildState(progress: number, floorNumber: number): FloorBuildState {
   const value = clamp01(progress);
   const floor = Math.min(FLOOR_COUNT, Math.max(1, Math.floor(floorNumber)));
@@ -127,6 +144,7 @@ export function roomLabelProgress(progress: number, fadeStart: number): number {
   return clamp01(enter * (1 - leave));
 }
 
+/** Maps progress to scene index 0-4. */
 export function sceneIndexAtProgress(progress: number): 0 | 1 | 2 | 3 | 4 {
   const value = clamp01(progress);
   if (value < BUILD_START) return 0;
