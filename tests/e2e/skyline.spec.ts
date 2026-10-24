@@ -73,6 +73,23 @@ test.describe("Skyline user journeys", () => {
     expect(await duplicateFilter.json()).toMatchObject({ details: { bhk: ["Provide each query parameter only once"] } });
   });
 
+  test("opens an accessible enlarged gallery and closes it with Escape", async ({ page }) => {
+    await page.goto("/properties");
+    const detailHref = await page.locator("a[data-property-link]").first().getAttribute("href");
+    expect(detailHref).toBeTruthy();
+    await page.goto(detailHref!);
+
+    await page.getByRole("button", { name: /enlarge image/i }).click();
+    const viewer = page.getByRole("dialog", { name: /image viewer/i });
+    await expect(viewer).toBeVisible();
+    await expect(viewer.getByRole("button", { name: /close image viewer/i })).toBeVisible();
+    await viewer.getByRole("button", { name: /next enlarged image/i }).click();
+    await expect(viewer.locator(".property-lightbox__topline")).toContainText("02 / 03");
+
+    await page.keyboard.press("Escape");
+    await expect(viewer).not.toBeVisible();
+  });
+
   test("shows an actual not-found page for an unknown property slug", async ({ page }) => {
     await page.goto("/properties/this-property-does-not-exist");
     await expect(page.getByText("404", { exact: true })).toBeVisible();
