@@ -50,7 +50,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = !isLowPower;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     let world: ReturnType<typeof createTowerScene>;
     try {
