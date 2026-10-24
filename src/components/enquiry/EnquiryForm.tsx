@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { CalendarDays, CheckCircle2, LoaderCircle, Send } from "lucide-react";
+import { CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { enquirySchema } from "@/lib/properties/types";
 
 type EnquiryFields = {
@@ -109,7 +109,7 @@ export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: {
             </div>
             <div className="form-field form-field--full">
               <label htmlFor="enquiry-date">Preferred visit date <span>*</span></label>
-              <div className="form-control-with-icon"><input className={fieldClass("preferredVisitDate")} id="enquiry-date" name="preferredVisitDate" type="date" min={minimumVisitDate} value={values.preferredVisitDate} onChange={(event) => update("preferredVisitDate", event.target.value)} aria-invalid={Boolean(errors.preferredVisitDate)} aria-describedby={errors.preferredVisitDate ? "enquiry-date-error" : undefined} required /><CalendarDays size={16} aria-hidden="true" /></div>
+              <input className={fieldClass("preferredVisitDate")} id="enquiry-date" name="preferredVisitDate" type="date" min={minimumVisitDate} value={values.preferredVisitDate} onChange={(event) => update("preferredVisitDate", event.target.value)} aria-invalid={Boolean(errors.preferredVisitDate)} aria-describedby={errors.preferredVisitDate ? "enquiry-date-error" : undefined} required />
               {errors.preferredVisitDate ? <p className="field-error" id="enquiry-date-error">{errors.preferredVisitDate}</p> : null}
             </div>
             <div className="form-field form-field--full">
