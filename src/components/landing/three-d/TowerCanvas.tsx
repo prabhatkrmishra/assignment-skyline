@@ -361,6 +361,13 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       frameId = 0;
     };
 
+    const onWebGLContextLost = (event: Event) => {
+      event.preventDefault();
+      stopRenderLoop();
+      onUnsupported();
+    };
+    canvas.addEventListener("webglcontextlost", onWebGLContextLost, false);
+
     const visibilityChange = () => {
       documentVisible = document.visibilityState === "visible";
       if (documentVisible) startRenderLoop();
@@ -395,6 +402,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       resizeObserver.disconnect();
       root.removeEventListener("pointermove", onPointerMove);
       root.removeEventListener("pointerleave", onPointerLeave);
+      canvas.removeEventListener("webglcontextlost", onWebGLContextLost, false);
       document.removeEventListener("visibilitychange", visibilityChange);
       window.removeEventListener("scroll", updateProgress);
       labels.forEach(({ element }) => element.remove());
