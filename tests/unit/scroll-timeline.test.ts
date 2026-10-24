@@ -10,7 +10,16 @@ import {
   segmentProgress,
   amenityIndexAtProgress,
   sceneIndexAtProgress,
-} from "@/components/landing/StoryProgress";
+  FLOOR_COUNT,
+  FLOOR_HEIGHT,
+  HERO_FLOOR_NUMBER,
+  INTERIOR_END,
+  INTERIOR_START,
+  floorBuildState,
+  heroFacadeOpenProgress,
+  initialFloorOffset,
+  roomLabelProgress,
+} from "@/lib/scroll/timeline";
 import { updateCameraPath } from "@/components/landing/three-d/ScrollTimeline";
 
 interface VectorStub {
@@ -58,6 +67,7 @@ describe("scroll timeline", () => {
     expect(sceneIndexAtProgress(BUILD_START - 0.001)).toBe(0);
     expect(sceneIndexAtProgress(BUILD_START)).toBe(1);
     expect(sceneIndexAtProgress(BUILD_END)).toBe(2);
+    expect(sceneIndexAtProgress(INTERIOR_END - 0.001)).toBe(2);
     expect(sceneIndexAtProgress(AMENITIES_START - 0.001)).toBe(2);
     expect(sceneIndexAtProgress(AMENITIES_START)).toBe(3);
     expect(sceneIndexAtProgress(CTA_START - 0.001)).toBe(3);
@@ -106,5 +116,47 @@ describe("scroll timeline", () => {
     expect([middlePosition.x, middlePosition.y, middlePosition.z]).not.toEqual(
       [firstPassPosition.x, firstPassPosition.y, firstPassPosition.z],
     );
+  });
+});
+
+
+describe("24-floor scene choreography", () => {
+  it("uses 24 levels at 3.2 world units per floor with Floor_12 as hero", () => {
+    expect(FLOOR_COUNT).toBe(24);
+    expect(FLOOR_HEIGHT).toBe(3.2);
+    expect(HERO_FLOOR_NUMBER).toBe(12);
+  });
+
+  it("stages each floor above its base, then settles it monotonically into place", () => {
+    for (let floorNumber = 1; floorNumber <= FLOOR_COUNT; floorNumber += 1) {
+      const staged = floorBuildState(BUILD_START, floorNumber);
+      const halfway = floorBuildState((BUILD_START + BUILD_END) / 2, floorNumber);
+      const assembled = floorBuildState(BUILD_END, floorNumber);
+      expect(staged.verticalOffset).toBeCloseTo(initialFloorOffset(floorNumber));
+      expect(halfway.verticalOffset).toBeLessThanOrEqual(staged.verticalOffset);
+      expect(assembled.verticalOffset).toBe(0);
+      expect(assembled.opacity).toBe(1);
+    }
+  });
+
+  it("has no position/opacity jump at the Arrival-to-Build boundary", () => {
+    const before = floorBuildState(BUILD_START - 1e-8, HERO_FLOOR_NUMBER);
+    const at = floorBuildState(BUILD_START, HERO_FLOOR_NUMBER);
+    expect(before.verticalOffset).toBeCloseTo(at.verticalOffset, 5);
+    expect(before.opacity).toBeCloseTo(at.opacity, 5);
+  });
+
+  it("opens only through the interior range and closes on arrival at amenities", () => {
+    expect(heroFacadeOpenProgress(INTERIOR_START)).toBe(0);
+    expect(heroFacadeOpenProgress((INTERIOR_START + INTERIOR_END) / 2)).toBeGreaterThan(0);
+    expect(heroFacadeOpenProgress(INTERIOR_END)).toBeGreaterThan(0.99);
+    expect(heroFacadeOpenProgress(AMENITIES_START + 0.035)).toBe(0);
+    expect(heroFacadeOpenProgress(1)).toBe(0);
+  });
+
+  it("stagger-fades room labels while keeping their visibility progress deterministic", () => {
+    expect(roomLabelProgress(0.44, 0.45)).toBe(0);
+    expect(roomLabelProgress(0.49, 0.45)).toBeGreaterThan(0.9);
+    expect(roomLabelProgress(INTERIOR_END, 0.45)).toBe(0);
   });
 });
