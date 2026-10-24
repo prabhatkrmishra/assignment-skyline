@@ -163,7 +163,7 @@ em { font-family: var(--serif); font-weight: 400; }
 .property-card__heading h3 { min-width: 0; margin: 0; font-family: var(--serif); font-size: clamp(1.2rem, 1.65vw, 1.65rem); font-weight: 400; letter-spacing: -.025em; line-height: 1.25; }
 .property-card__heading h3 a:hover { color: #586d52; }
 .property-card__heading strong { flex-shrink: 0; font-size: .83rem; font-weight: 600; letter-spacing: -.025em; }
-.property-card__specs { display: flex; align-items: center; flex-wrap: wrap; gap: .85rem; margin-top: .95rem; padding-top: .85rem; border-top: 1px solid var(--line); color: #666c62; font-size: .66rem; }
+.property-card__specs { display: flex; align-items: center; flex-wrap: wrap; gap: .85rem; margin-top: .95rem; padding-top: .85rem; border-top: 1px solid var(--line); color: #5f655c; font-size: .66rem; }
 .property-card__specs span { display: inline-flex; align-items: center; gap: .34rem; }
 .property-card__specs svg { color: #657662; }
 .property-card__furnished { margin-left: auto; }

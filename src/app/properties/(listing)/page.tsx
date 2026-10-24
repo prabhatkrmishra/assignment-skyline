@@ -121,7 +121,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
                 {result.items.map((property, index) => <PropertyCard key={property.id} property={property} index={index} showIndex sizes="(max-width: 520px) 100vw, (max-width: 800px) 50vw, (max-width: 1000px) 100vw, 44vw" />)}
               </div>
               <nav className="pagination" aria-label="Property pages">
-                <Link className={`pagination__arrow ${result.page <= 1 ? "is-disabled" : ""}`} aria-disabled={result.page <= 1} tabIndex={result.page <= 1 ? -1 : 0} href={listingPageHref(raw, result.page - 1)}><ArrowLeft size={15} aria-hidden="true" /><span>Previous</span></Link>
+                <Link className={`pagination__arrow ${result.page <= 1 ? "is-disabled" : ""}`} aria-disabled={result.page <= 1} aria-label="Previous page" tabIndex={result.page <= 1 ? -1 : 0} href={listingPageHref(raw, result.page - 1)}><ArrowLeft size={15} aria-hidden="true" /><span>Previous</span></Link>
                 <div className="pagination__pages">
                   {Array.from({ length: pageCount }, (_, index) => index + 1).filter((page) => page === 1 || page === pageCount || Math.abs(page - result.page) <= 1).map((page, index, visiblePages) => (
                     <span key={page} className="pagination__item-wrap">
@@ -130,7 +130,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
                     </span>
                   ))}
                 </div>
-                <Link className={`pagination__arrow ${!result.hasMore ? "is-disabled" : ""}`} aria-disabled={!result.hasMore} tabIndex={!result.hasMore ? -1 : 0} href={listingPageHref(raw, result.page + 1)}><span>Next</span><ArrowRight size={15} aria-hidden="true" /></Link>
+                <Link className={`pagination__arrow ${!result.hasMore ? "is-disabled" : ""}`} aria-disabled={!result.hasMore} aria-label="Next page" tabIndex={!result.hasMore ? -1 : 0} href={listingPageHref(raw, result.page + 1)}><span>Next</span><ArrowRight size={15} aria-hidden="true" /></Link>
               </nav>
             </>
           ) : (

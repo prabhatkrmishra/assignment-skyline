@@ -37,7 +37,7 @@ export function PropertyCard({ property, index, showIndex = false, sizes = FEATU
   const cover = property.images[0] ?? "/images/properties/living-room.webp";
   return (
     <article className="property-card" style={index === undefined ? undefined : { "--card-index": index } as CSSProperties}>
-      <Link className="property-card__visual" href={`/properties/${property.slug}`} data-property-link aria-label={`View ${property.title}`}>
+      <Link className="property-card__visual" href={`/properties/${property.slug}`} data-property-link>
         <Image
           src={cover}
           alt={`${property.bhk} BHK ${property.propertyType.toLowerCase()} in ${property.locality}`}
