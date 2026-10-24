@@ -46,6 +46,15 @@ test.describe("Skyline user journeys", () => {
     await expect(page.locator("#filter-bhk")).toHaveValue("");
   });
 
+  test("rejects duplicate page filters and clamps pages beyond the result set", async ({ page }) => {
+    await page.goto("/properties?bhk=1&bhk=4");
+    await expect(page.getByText("Some filters in this link were not valid.")).toBeVisible();
+
+    await page.goto("/properties?q=NoSuchResidence&page=999");
+    await expect(page).toHaveURL(/\/properties\?q=NoSuchResidence$/);
+    await expect(page.getByRole("heading", { name: /No homes match your search/i })).toBeVisible();
+  });
+
   test("returns a clear validation error for unsupported listing query parameters", async ({ request }) => {
     const oversizedPage = await request.get("/api/properties?limit=25");
     expect(oversizedPage.status()).toBe(400);

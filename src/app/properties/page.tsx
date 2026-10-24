@@ -23,11 +23,15 @@ export const metadata: Metadata = {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-function normalizeSearchParams(input: Record<string, string | string[] | undefined>) {
+function normalizeSearchParams(input: Record<string, string | string[] | undefined>): Record<string, string> | null {
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(input)) {
     if (typeof value === "string") normalized[key] = value;
-    else if (Array.isArray(value) && typeof value[0] === "string") normalized[key] = value[0];
+    else if (Array.isArray(value)) {
+      // Duplicate URL keys are ambiguous; do not silently choose the first value.
+      if (value.length !== 1 || typeof value[0] !== "string") return null;
+      normalized[key] = value[0];
+    }
   }
   // The UI is fixed at 12 items per page; the API can accept up to 24 independently.
   delete normalized.limit;
@@ -36,15 +40,17 @@ function normalizeSearchParams(input: Record<string, string | string[] | undefin
 }
 
 export default async function PropertiesPage({ searchParams }: { searchParams: SearchParams }) {
-  const raw = normalizeSearchParams(await searchParams);
-  const parsed = propertySearchSchema.safeParse({ ...raw, limit: "12" });
-  const search = parsed.success ? parsed.data : propertySearchSchema.parse({});
-  const result = parsed.success ? listProperties(search) : { items: [], total: 0, page: 1, limit: 12, hasMore: false };
+  const normalized = normalizeSearchParams(await searchParams);
+  const raw = normalized ?? {};
+  const parsed = normalized ? propertySearchSchema.safeParse({ ...normalized, limit: "12" }) : null;
+  const isValidQuery = parsed !== null && parsed.success;
+  const search = isValidQuery ? parsed.data : propertySearchSchema.parse({});
+  const result = isValidQuery ? listProperties(search) : { items: [], total: 0, page: 1, limit: 12, hasMore: false };
   const pageCount = Math.max(1, Math.ceil(result.total / result.limit));
-  if (parsed.success && result.total > 0 && search.page > pageCount) {
+  if (isValidQuery && search.page > pageCount) {
     redirect(listingPageHref(raw, pageCount));
   }
-  const isFiltered = Boolean(search.q || search.minPrice !== undefined || search.maxPrice !== undefined || search.bhk !== undefined || search.type || search.furnished !== undefined || search.sort !== "newest");
+  const isFiltered = isValidQuery && Boolean(search.q || search.minPrice !== undefined || search.maxPrice !== undefined || search.bhk !== undefined || search.type || search.furnished !== undefined || search.sort !== "newest");
 
   return (
     <main id="main-content" className="listing-page">
@@ -76,12 +82,12 @@ export default async function PropertiesPage({ searchParams }: { searchParams: S
             <div>
               <span className="eyebrow">THE COLLECTION</span>
               <h2 id="listing-results-heading">Available residences</h2>
-              <p>{parsed.success ? `${result.total} ${result.total === 1 ? "residence" : "residences"}${isFiltered ? " matching your search" : " to discover"}` : "Some filters in this link were not valid."}</p>
+              <p>{isValidQuery ? `${result.total} ${result.total === 1 ? "residence" : "residences"}${isFiltered ? " matching your search" : " to discover"}` : "Some filters in this link were not valid."}</p>
             </div>
             <span className="listing-results__count">{String(result.total).padStart(2, "0")} <small>HOMES</small></span>
           </div>
 
-          {!parsed.success ? (
+          {!isValidQuery ? (
             <div className="empty-state" role="alert">
               <span className="empty-state__symbol"><Search size={24} /></span>
               <h3>That search needs a second look.</h3>
