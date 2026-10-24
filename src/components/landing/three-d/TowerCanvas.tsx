@@ -322,11 +322,20 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       document.removeEventListener("visibilitychange", visibilityChange);
       window.removeEventListener("scroll", updateProgress);
       labels.forEach(({ element }) => element.remove());
+      const disposedGeometries = new Set<THREE.BufferGeometry>();
+      const disposedMaterials = new Set<THREE.Material>();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
+          if (!disposedGeometries.has(object.geometry)) {
+            object.geometry.dispose();
+            disposedGeometries.add(object.geometry);
+          }
           const materials = Array.isArray(object.material) ? object.material : [object.material];
-          materials.forEach((material) => material.dispose());
+          materials.forEach((material) => {
+            if (disposedMaterials.has(material)) return;
+            material.dispose();
+            disposedMaterials.add(material);
+          });
         }
       });
       renderer.dispose();
