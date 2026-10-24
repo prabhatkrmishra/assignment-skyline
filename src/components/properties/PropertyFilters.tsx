@@ -1,24 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { propertyTypes, type PropertySort } from "@/lib/properties/types";
-
-function withoutPage(params: URLSearchParams) {
-  params.delete("page");
-  return params;
-}
+import { updateListingQuery } from "@/lib/properties/search-state";
 
 export function PropertyFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+  const latestQueryRef = useRef(searchParamsString);
   const [isPending, startTransition] = useTransition();
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
   const [minDraft, setMinDraft] = useState(searchParams.get("minPrice") ?? "");
   const [maxDraft, setMaxDraft] = useState(searchParams.get("maxPrice") ?? "");
   const [priceError, setPriceError] = useState("");
+
+  useEffect(() => {
+    latestQueryRef.current = searchParamsString;
+  }, [searchParamsString]);
 
   useEffect(() => setSearchDraft(searchParams.get("q") ?? ""), [searchParams]);
   useEffect(() => {
@@ -28,18 +30,16 @@ export function PropertyFilters() {
   }, [searchParams]);
 
   const navigateWith = useCallback((updates: Record<string, string>, mode: "push" | "replace" = "push") => {
-    const params = withoutPage(new URLSearchParams(searchParams.toString()));
-    for (const [key, value] of Object.entries(updates)) {
-      if (value === "") params.delete(key);
-      else params.set(key, value);
-    }
-    const query = params.toString();
+    // Advance the local query snapshot before navigation so rapid filter changes compose
+    // with one another instead of overwriting a transition that has not committed yet.
+    const query = updateListingQuery(latestQueryRef.current, updates);
+    latestQueryRef.current = query;
     const href = query ? `${pathname}?${query}` : pathname;
     startTransition(() => {
       if (mode === "replace") router.replace(href, { scroll: false });
       else router.push(href, { scroll: false });
     });
-  }, [pathname, router, searchParams]);
+  }, [pathname, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -78,6 +78,7 @@ export function PropertyFilters() {
     setMinDraft("");
     setMaxDraft("");
     setPriceError("");
+    latestQueryRef.current = "";
     startTransition(() => router.push(pathname, { scroll: false }));
   };
 
