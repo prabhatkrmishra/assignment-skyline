@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { getTodayInIndia } from "../../src/lib/properties/date";
 
 function futureVisitDate(): string {
-  const date = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const [year, month, day] = getTodayInIndia().split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + 45)).toISOString().slice(0, 10);
 }
 
 function validEnquiryPayload(propertySlug: string) {

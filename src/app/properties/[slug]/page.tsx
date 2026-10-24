@@ -8,6 +8,7 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 import { EnquiryForm } from "@/components/enquiry/EnquiryForm";
 import { getPropertyBySlug, getSimilarPropertiesFor } from "@/lib/properties/repository";
 import { formatArea, formatPrice } from "@/lib/properties/format";
+import { getTodayInIndia } from "@/lib/properties/date";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +94,7 @@ export default async function PropertyDetailPage({ params }: RouteContext) {
         </aside>
       </div>
 
-      <div className="detail-enquiry-wrap page-gutter" id="enquiry"><EnquiryForm propertySlug={property.slug} propertyTitle={property.title} /></div>
+      <div className="detail-enquiry-wrap page-gutter" id="enquiry"><EnquiryForm propertySlug={property.slug} propertyTitle={property.title} minimumVisitDate={getTodayInIndia()} /></div>
 
       {similar.length ? <section className="similar-section section-space" aria-labelledby="similar-heading"><div className="section-heading page-gutter"><div><span className="eyebrow">YOU MAY ALSO LIKE</span><h2 id="similar-heading">A few more <em>possibilities.</em></h2><p>Homes in the same neighbourhood or with a similar layout.</p></div><Link className="text-link" href="/properties">View all homes <ArrowUpRight size={15} aria-hidden="true" /></Link></div><div className="property-grid page-gutter">{similar.map((item, index) => <PropertyCard property={item} index={index} key={item.id} />)}</div></section> : null}
 

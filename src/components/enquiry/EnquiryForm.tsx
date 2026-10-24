@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { CalendarDays, CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { enquirySchema } from "@/lib/properties/types";
-import { getTodayInIndia } from "@/lib/properties/date";
 
 type EnquiryFields = {
   name: string;
@@ -15,8 +14,7 @@ type EnquiryFields = {
 };
 type FieldErrors = Partial<Record<keyof EnquiryFields | "propertySlug", string>>;
 
-export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: string; propertyTitle: string }) {
-  const today = useMemo(getTodayInIndia, []);
+export function EnquiryForm({ propertySlug, propertyTitle, minimumVisitDate }: { propertySlug: string; propertyTitle: string; minimumVisitDate: string }) {
   const [values, setValues] = useState<EnquiryFields>({ name: "", phone: "", email: "", message: "", preferredVisitDate: "", website: "" });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
@@ -111,7 +109,7 @@ export function EnquiryForm({ propertySlug, propertyTitle }: { propertySlug: str
             </div>
             <div className="form-field form-field--full">
               <label htmlFor="enquiry-date">Preferred visit date <span>*</span></label>
-              <div className="form-control-with-icon"><input className={fieldClass("preferredVisitDate")} id="enquiry-date" name="preferredVisitDate" type="date" min={today} value={values.preferredVisitDate} onChange={(event) => update("preferredVisitDate", event.target.value)} aria-invalid={Boolean(errors.preferredVisitDate)} aria-describedby={errors.preferredVisitDate ? "enquiry-date-error" : undefined} required /><CalendarDays size={16} aria-hidden="true" /></div>
+              <div className="form-control-with-icon"><input className={fieldClass("preferredVisitDate")} id="enquiry-date" name="preferredVisitDate" type="date" min={minimumVisitDate} value={values.preferredVisitDate} onChange={(event) => update("preferredVisitDate", event.target.value)} aria-invalid={Boolean(errors.preferredVisitDate)} aria-describedby={errors.preferredVisitDate ? "enquiry-date-error" : undefined} required /><CalendarDays size={16} aria-hidden="true" /></div>
               {errors.preferredVisitDate ? <p className="field-error" id="enquiry-date-error">{errors.preferredVisitDate}</p> : null}
             </div>
             <div className="form-field form-field--full">
