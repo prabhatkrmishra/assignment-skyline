@@ -45,9 +45,9 @@ const scenes = [
 ];
 
 const amenitySlides = [
-  { title: "Water, without a hurry.", description: "A calm, resort-style pool for mornings that belong to you.", image: "/images/properties/pool.webp", icon: Waves },
-  { title: "Room to find your rhythm.", description: "A considered fitness space, made for your own pace.", image: "/images/properties/living-room.webp", icon: Dumbbell },
-  { title: "Green between the moments.", description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", icon: Building2 },
+  { title: "Water, without a hurry.", headline: <>Water, without a <em>hurry.</em></>, description: "A calm, resort-style pool for mornings that belong to you.", image: "/images/properties/pool.webp", tag: "AMENITY 01 / POOL", icon: Waves },
+  { title: "Room to find your rhythm.", headline: <>Room to find your <em>rhythm.</em></>, description: "A considered fitness space, made for your own pace.", image: "/images/properties/living-room.webp", tag: "AMENITY 02 / WELLNESS", icon: Dumbbell },
+  { title: "Green between the moments.", headline: <>Green between the <em>moments.</em></>, description: "Garden paths and quiet pockets of shade, just downstairs.", image: "/images/properties/terrace.webp", tag: "AMENITY 03 / GARDEN", icon: Building2 },
 ];
 
 function StaticStory() {
@@ -64,7 +64,8 @@ function StaticStory() {
               <span className="eyebrow eyebrow--light">{scene.eyebrow}</span>
               <h2>{scene.title}</h2>
               <p>{scene.body}</p>
-              <span className="story-copy__tag">{scene.tag}</span>
+              <span className="story-copy__tag">{index === 3 ? amenitySlides[0].tag : scene.tag}</span>
+              {index === 3 ? <div className="story-static-amenities">{amenitySlides.map((amenity) => <article key={amenity.tag}><Image src={amenity.image} alt="" fill sizes="(max-width: 600px) 70vw, 18vw" /><span>{amenity.tag}</span><strong>{amenity.title}</strong></article>)}</div> : null}
               {index === scenes.length - 1 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
             </div>
           </section>
@@ -77,6 +78,7 @@ function StaticStory() {
 export function TowerStory() {
   const storyRef = useRef<HTMLElement>(null);
   const [activeScene, setActiveScene] = useState(0);
+  const [activeAmenity, setActiveAmenity] = useState(0);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [lowPower, setLowPower] = useState(false);
@@ -107,6 +109,10 @@ export function TowerStory() {
       const progress = Math.min(1, Math.max(0, -rect.top / range));
       const nextScene = progress < 0.18 ? 0 : progress < 0.4 ? 1 : progress < 0.6 ? 2 : progress < 0.86 ? 3 : 4;
       setActiveScene((current) => current === nextScene ? current : nextScene);
+      if (progress >= 0.6 && progress < 0.86) {
+        const nextAmenity = progress < 0.675 ? 0 : progress < 0.76 ? 1 : 2;
+        setActiveAmenity((current) => current === nextAmenity ? current : nextAmenity);
+      }
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
     update();
@@ -157,10 +163,10 @@ export function TowerStory() {
         <div className="story-scene-count" aria-hidden="true"><span>0{activeScene + 1}</span><i /><span>05</span></div>
 
         <div className={`story-copy page-gutter story-copy--scene-${activeScene}`} aria-live="polite" aria-atomic="true">
-          <span className="eyebrow eyebrow--light">{scenes[activeScene].eyebrow}</span>
-          <h1>{scenes[activeScene].title}</h1>
-          <p>{scenes[activeScene].body}</p>
-          <span className="story-copy__tag">{scenes[activeScene].tag}</span>
+          <span className="eyebrow eyebrow--light">{activeScene === 3 ? `04 / AMENITIES — ${String(activeAmenity + 1).padStart(2, "0")}` : scenes[activeScene].eyebrow}</span>
+          {activeScene === 3 ? <h1>{amenitySlides[activeAmenity].headline}</h1> : <h1>{scenes[activeScene].title}</h1>}
+          <p>{activeScene === 3 ? amenitySlides[activeAmenity].description : scenes[activeScene].body}</p>
+          <span className="story-copy__tag">{activeScene === 3 ? amenitySlides[activeAmenity].tag : scenes[activeScene].tag}</span>
           {activeScene === 4 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
         </div>
 
