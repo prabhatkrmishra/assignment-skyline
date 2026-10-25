@@ -25,12 +25,15 @@ import { mountRoomLabels, unmountRoomLabels, updateRoomLabels } from "@/componen
 import { createTowerScene, disposeTowerScene } from "@/components/three/TowerScene";
 import { applyTowerScrollProgress } from "@/components/three/TowerChoreography";
 import { createSpring, isSettled, smoothDamp } from "@/lib/scroll/spring";
-import { AMENITIES_START, FLOOR_COUNT, HERO_FLOOR_NUMBER, INTERIOR_START, clamp01 } from "@/lib/scroll/timeline";
+import {
+  AMENITIES_START,
+  FLOOR_COUNT,
+  HERO_FLOOR_NUMBER,
+  INTERIOR_START,
+  SCROLL_SPRING,
+  clamp01,
+} from "@/lib/scroll/timeline";
 
-/** Seconds for the camera to catch up with scroll. ~0.5 feels heavy and calm; lower is snappier. */
-const PROGRESS_SMOOTH_TIME = 0.55;
-/** Progress units per second; a full-page scrollbar jump takes at least ~1.2 s to play out. */
-const PROGRESS_MAX_SPEED = 0.85;
 const POINTER_SMOOTH_TIME = 0.6;
 
 interface TowerCanvasProps {
@@ -54,6 +57,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     }
 
     const isLowPower = window.matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4;
+    const debug = new URLSearchParams(window.location.search).has("debug");
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
@@ -81,6 +85,9 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
     renderer.toneMappingExposure = 1.08;
     renderer.shadowMap.enabled = !isLowPower;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    if (debug) {
+      (window as Window & { __skylineRenderer?: THREE.WebGLRenderer }).__skylineRenderer = renderer;
+    }
 
     let world: ReturnType<typeof createTowerScene>;
     try {
@@ -204,7 +211,7 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
         progressSpring.value = scrollProgress;
         progressSpring.velocity = 0;
       } else {
-        smoothDamp(progressSpring, scrollProgress, PROGRESS_SMOOTH_TIME, delta, PROGRESS_MAX_SPEED);
+        smoothDamp(progressSpring, scrollProgress, SCROLL_SPRING.smoothTime, delta, SCROLL_SPRING.maxSpeed);
       }
       shownProgress = progressSpring.value;
       // Keep the DOM copy in lock-step with what the 3D is actually showing.
@@ -214,14 +221,19 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
       }
 
       // Floor assembly, dollhouse lift and the single hero facade are pure functions of progress.
-      applyTowerScrollProgress(floors, shownProgress, world.rooftop);
+      applyTowerScrollProgress(floors, shownProgress, world.rooftop, world.balconies);
+      // Water normals drift slowly; this is ambient scenery, not camera choreography.
+      world.updateAmbient(time / 1000);
 
       // The scroll timeline writes camera position directly. Only pointer parallax is damped.
       pointerCurrent.set(
         smoothDamp(pointerSpringX, pointerTarget.x, POINTER_SMOOTH_TIME, delta),
         smoothDamp(pointerSpringY, pointerTarget.y, POINTER_SMOOTH_TIME, delta),
       );
-      applyCameraRig(camera, shownProgress, { x: pointerCurrent.x, y: pointerCurrent.y });
+      // Hand-held sway and pointer parallax fade while the camera is travelling, so a fast scroll never
+      // stacks two motions on top of each other. At rest they return to full subtle strength.
+      const motionScale = 0.35 + 0.65 * Math.exp(-Math.abs(progressSpring.velocity) * 2.2);
+      applyCameraRig(camera, shownProgress, { x: pointerCurrent.x, y: pointerCurrent.y }, motionScale);
       // Labels and slab raycasts must use this frame's matrices, not the last rendered frame.
       camera.updateMatrixWorld(true);
       scene.updateMatrixWorld(true);
@@ -295,6 +307,9 @@ export default function TowerCanvas({ scrollContainerRef, onUnsupported }: Tower
 
       disposeTowerScene(world);
       renderer.dispose();
+      if (debug) {
+        delete (window as Window & { __skylineRenderer?: THREE.WebGLRenderer }).__skylineRenderer;
+      }
     };
   }, [onUnsupported, scrollContainerRef]);
 

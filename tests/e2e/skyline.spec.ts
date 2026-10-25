@@ -213,6 +213,70 @@ test.describe("Skyline user journeys", () => {
     await expect(page.getByLabel("Mobile number")).toHaveValue("1234567890");
   });
 
+  test("pauses the 3D render loop while the tab is hidden and resumes when visible", async ({ page }) => {
+    await page.goto("/?debug=1");
+    await page.locator("#tower").scrollIntoViewIfNeeded();
+    await page.mouse.wheel(0, 400);
+    await expect(page.locator('.tower-canvas[data-ready="true"]')).toHaveCount(1, { timeout: 15_000 });
+
+    const frameCount = () =>
+      page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __skylineRenderer?: { info: { render: { frame: number } } };
+            }
+          ).__skylineRenderer?.info.render.frame ?? -1,
+      );
+
+    const before = await frameCount();
+    expect(before).toBeGreaterThan(0);
+
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    // Let any frame that was already in flight finish, then confirm the counter stops advancing.
+    await page.waitForTimeout(1_500);
+    const settled = await frameCount();
+    await page.waitForTimeout(1_200);
+    const paused = await frameCount();
+    expect(paused).toBe(settled);
+
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect.poll(frameCount, { timeout: 8_000 }).toBeGreaterThan(paused + 2);
+  });
+
+  test("plays the whole 3D story without console errors", async ({ page }) => {
+    test.setTimeout(120_000);
+    const errors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", (error) => errors.push(String(error)));
+
+    await page.goto("/");
+    await page.locator("#tower").scrollIntoViewIfNeeded();
+    await page.mouse.wheel(0, 400);
+    await expect(page.locator('.tower-canvas[data-ready="true"]')).toHaveCount(1, { timeout: 15_000 });
+
+    for (const progress of [0.05, 0.2, 0.35, 0.5, 0.65, 0.85, 0.99]) {
+      await page.evaluate((target) => {
+        const story = document.querySelector<HTMLElement>("#tower");
+        if (!story) throw new Error("Story section missing");
+        const top = story.getBoundingClientRect().top + window.scrollY;
+        const range = story.offsetHeight - window.innerHeight;
+        window.scrollTo({ top: top + target * range, behavior: "instant" });
+      }, progress);
+      await page.waitForTimeout(250);
+    }
+
+    expect(errors).toEqual([]);
+  });
+
   test("uses the static story when reduced motion is enabled", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
