@@ -1,14 +1,14 @@
 {
   "snapshots": [
     {
-      "name": "2026-10-25T07-30-34-409Z",
-      "createdAt": "2026-10-25T07:30:34.409Z",
+      "name": "2026-10-25T08-05-59-512Z",
+      "createdAt": "2026-10-25T08:05:59.512Z",
       "nextVersion": "16.4.3",
       "gitBranch": "main",
-      "gitSha": "37ac00595b76df5a8fab973dd33cc5022ee138f0",
-      "gitShortSha": "37ac005",
+      "gitSha": "0e6e283c84cb3ef5bc0d512de0b6f8ca0698edf1",
+      "gitShortSha": "0e6e283",
       "gitDirty": true,
-      "gitMessage": "docs: record image first-load cost and the preview pipeline",
+      "gitMessage": "test(e2e): cover the landing enquiry journey",
       "appDirOnly": false,
       "noMangling": false,
       "routeCount": 9

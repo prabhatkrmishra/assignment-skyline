@@ -24,17 +24,21 @@ persistent disk); the commands are at the bottom of this file.
 
 Preset: Lighthouse's default mobile simulation — 150 ms RTT, 1.6 Mbps throughput, 4× CPU slowdown.
 Target server: `npm run build` + `next start -p 4100`, seeded local database, cold image-optimizer
-cache (first-visit conditions). Captured 2026-10-25.
+cache (first-visit conditions). Captured 2026-10-25, re-run after the landing enquiry section landed.
 
 | Route | Performance | Accessibility | Best Practices | FCP | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|
-| `/` | 94 | 100 | 100 | 1.1 s | **3.1 s** | 50 ms | 0 |
-| `/properties` | 98 | 100 | 100 | 1.2 s | 2.3 s | 40 ms | 0 |
-| `/properties/[slug]` | 99 | 100 | 100 | 1.2 s | 2.2 s | 50 ms | 0 |
+| `/` | 93 | 100 | 100 | 1.1 s | **3.1 s** | 85 ms | 0 |
+| `/properties` | 99 | 100 | 100 | 1.2 s | 2.2 s | 44 ms | 0 |
+| `/properties/[slug]` | 99 | 100 | 100 | 1.2 s | 2.2 s | 42 ms | 0 |
 
 Against the assignment thresholds (performance ≥ 90, accessibility ≥ 95, best practices ≥ 95, LCP
 < 2.5 s, CLS < 0.05, TBT < 200 ms): every route passes except **LCP on the landing page, which
 misses at 3.1 s**.
+
+The landing page scores one point lower than the previous capture (94 → 93, TBT 50 → 85 ms) because
+it now hydrates the enquiry chooser and its form; accessibility stays at 100 and CLS stays at 0, so
+the added section costs main-thread time rather than layout or semantics.
 
 ### Principal bottleneck for the landing-page LCP
 
@@ -56,13 +60,14 @@ is in `bundle-analyzer/data/`. Client bundle sizes from this run:
 
 | Route | Client JS | Client gzipped |
 |---|---|---|
-| `/` | 1,328,179 B | 413,774 B |
-| `/properties` | 709,418 B | 248,721 B |
-| `/properties/[slug]` | 714,617 B | 250,955 B |
-| `/_not-found` | 683,758 B | 237,501 B |
+| `/` | 1,338,514 B | 417,927 B |
+| `/properties` | 709,832 B | 248,786 B |
+| `/properties/[slug]` | 715,249 B | 251,042 B |
+| `/_not-found` | 684,172 B | 237,566 B |
 
 The lazy 3D chunk is not part of the landing page's initial scripts; it loads only once the tower
-story is scrolled into view.
+story is scrolled into view. Against the previous capture, the enquiry section adds 10,335 B
+(4,153 B gzipped) to `/` and 414–632 B to the other routes, which is the extra header nav link.
 
 ## Regenerating
 
@@ -80,9 +85,11 @@ for pair in "home:/" "properties:/properties" "detail:/properties/$SLUG"; do
     --form-factor=mobile \
     --only-categories=performance,accessibility,best-practices \
     --output=html \
-    --output-path="reports/lighthouse-${pair%%:*}.html" \
+    --output=json \
+    --output-path="reports/generated/lighthouse-${pair%%:*}" \
     --chrome-flags="--headless"
 done
+mv reports/generated/lighthouse-*.report.html reports/
 ```
 
 `reports/generated/` holds the matching Lighthouse JSON for these runs and is gitignored; the HTML
