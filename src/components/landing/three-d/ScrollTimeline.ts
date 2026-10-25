@@ -29,6 +29,7 @@ import {
   GARDEN_STOP_START,
   GYM_STOP_END,
   GYM_STOP_START,
+  HERO_FACADE_OPEN_START,
   HERO_FLOOR_NUMBER,
   INTERIOR_CAMERA_APPROACH_PROGRESS,
   INTERIOR_CAMERA_SETTLE_PROGRESS,
@@ -55,33 +56,35 @@ interface Vector3Setter {
 }
 
 const heroY = PODIUM_TOP + (HERO_FLOOR_NUMBER - 1) * FLOOR_HEIGHT + 1.35;
-const towerTop = PODIUM_TOP + 24 * FLOOR_HEIGHT;
 const towerTarget: Vec3 = [0, PODIUM_TOP + (24 * FLOOR_HEIGHT) / 2, 0];
 const interiorTarget: Vec3 = [0, heroY, 0.15];
 
 /** First view of the open apartment, reached while the labels begin to appear. */
 const interiorSettlePose: CameraPose = { position: [14, heroY + 11, 15], target: interiorTarget };
 /** Slow lateral glide while the labels read; also where the Amenities fly-through departs from. */
-const interiorEndPose: CameraPose = { position: [8.5, heroY + 10.5, 17.5], target: interiorTarget };
+const interiorEndPose: CameraPose = { position: [11.5, heroY + 10.5, 16.5], target: interiorTarget };
 
 const BUILD_MIDPOINT = (BUILD_START + BUILD_END) / 2;
 
 /**
  * Cinematic path for Arrival -> Build-up -> Inside a home. Beats:
- *  - Arrival: low-angle crane that rises while orbiting ~46 degrees around the stationary tower.
+ *  - Arrival: low-angle crane that rises while orbiting ~44 degrees around the stationary tower.
  *  - Build-up: the camera climbs with the assembly front (look-at height tracks the floors as they stack),
- *    ending high above the crown.
- *  - Inside a home: a long descending crane from the crown down to the hero floor, then a slow glide.
+ *    ending below the crown so the descent to the apartment is short and calm.
+ *  - Inside a home: the descent finishes at the hero facade before the cutaway opens; the camera then
+ *    holds almost still through the lift and peel, and only settles once the apartment is open.
  * The path is one continuous spline (see sampleFlow): speed never drops to zero between keyframes,
  * so the camera flows through them instead of stopping at each.
  */
 const CAMERA_KEYFRAMES: readonly CameraKeyframe[] = [
-  { t: 0, position: [105, 40, 61], target: towerTarget },
-  { t: ARRIVAL_ORBIT_MIDPOINT, position: [74, 44, 96], target: [0, 40, 0] },
+  { t: 0, position: [100, 42, 63], target: towerTarget },
+  { t: ARRIVAL_ORBIT_MIDPOINT, position: [72, 44, 102], target: [0, 40, 0] },
   { t: BUILD_START, position: [30, 50, 118], target: [0, 36, 0] },
-  { t: BUILD_MIDPOINT, position: [20, 64, 110], target: [0, 52, 0] },
-  { t: BUILD_END, position: [14, towerTop + 4, 98], target: [0, towerTop - 6, 0] },
-  { t: INTERIOR_CAMERA_APPROACH_PROGRESS, position: [21, heroY + 12, 38], target: interiorTarget },
+  { t: BUILD_MIDPOINT, position: [22, 60, 108], target: [0, 50, 0] },
+  { t: BUILD_END, position: [16, 68, 94], target: [0, 58, 0] },
+  { t: INTERIOR_CAMERA_APPROACH_PROGRESS, position: [20, 54, 32], target: [0, 43, 0.1] },
+  // Drift of a few units while the upper floors rise and the hero facade peels: no competing move.
+  { t: HERO_FACADE_OPEN_START, position: [19, 53.2, 27], target: [0, 42.6, 0.1] },
   { t: INTERIOR_CAMERA_SETTLE_PROGRESS, ...interiorSettlePose },
   { t: INTERIOR_END, ...interiorEndPose },
 ];
@@ -104,10 +107,8 @@ interface ShotKey {
   rest?: boolean;
 }
 
-const TOWER_MID: Vec3 = [0, 18, 0];
 const POOL_SUBJECT: Vec3 = [23, 1.5, 13];
 const GYM_SUBJECT: Vec3 = [-23, 3, 2];
-const GARDEN_SUBJECT: Vec3 = [16, 1.5, -21];
 
 const toDegrees = (radians: number): number => (radians * 180) / Math.PI;
 const interiorEndOrbit = {
@@ -127,17 +128,17 @@ const AMENITY_KEYS: readonly ShotKey[] = [
   { t: POOL_STOP_START, az: 20, r: 50, y: 14, target: POOL_SUBJECT, rest: true },
   { t: POOL_STOP_END, az: 14, r: 47, y: 13.2, target: [23, 1.8, 12], rest: true },
   // Sweep across the front of the tower, hugging it to stay inside the neighbouring blocks.
-  { t: leg(POOL_STOP_END, GYM_STOP_START, 0.5), az: -15, r: 33, y: 15, target: TOWER_MID },
+  { t: leg(POOL_STOP_END, GYM_STOP_START, 0.5), az: -15, r: 33, y: 15, target: [0, 10, 0] },
   { t: GYM_STOP_START, az: -50, r: 40, y: 12, target: GYM_SUBJECT, rest: true },
-  { t: GYM_STOP_END, az: -46, r: 38.5, y: 11.5, target: [-23, 3.2, 2.5], rest: true },
-  // Long orbit around the west and back of the tower to the garden behind it.
-  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.22), az: -72, r: 35, y: 15, target: [-6, 16, 2] },
-  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.47), az: -145, r: 30, y: 17, target: TOWER_MID },
-  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.73), az: -203, r: 36, y: 17, target: [3, 12, -8] },
-  // Land behind the garden, looking back through it at the tower: the heading already matches the orbit,
-  // so the last part of the move is a calm pull-out instead of a sharp turn.
-  { t: GARDEN_STOP_START, az: -217, r: 54, y: 16, target: GARDEN_SUBJECT, rest: true },
-  { t: GARDEN_STOP_END, az: -221, r: 52, y: 15.2, target: [14, 1.8, -19], rest: true },
+  { t: GYM_STOP_END, az: -46, r: 38.5, y: 11.5, target: [-17, 4, 1], rest: true },
+  // Long, low orbit around the west and back of the tower to the garden. The radius dips inside the
+  // neighbouring block on the way past, then opens out behind the garden for the final look back.
+  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.25), az: -70, r: 34, y: 13, target: [-12, 10, -8] },
+  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.5), az: -100, r: 28, y: 16, target: [-8, 12, -8] },
+  { t: leg(GYM_STOP_END, GARDEN_STOP_START, 0.75), az: -125, r: 32, y: 16, target: [-8, 10, -11] },
+  // Land behind the garden, with the tower rising behind it and the planting across the foreground.
+  { t: GARDEN_STOP_START, az: -150, r: 48, y: 16, target: [6, 6, -8], rest: true },
+  { t: GARDEN_STOP_END, az: -154, r: 46, y: 15.6, target: [5.5, 5.8, -8], rest: true },
 ];
 
 function orbitPosition(key: Pick<ShotKey, "az" | "r" | "y">): Vec3 {
@@ -160,35 +161,69 @@ const gardenLeavePose: CameraPose = {
   target: AMENITY_KEYS[AMENITY_KEYS.length - 1].target,
 };
 
-/** The CTA sweeps out of the garden, rising into a wide golden-hour hero shot. */
+/** The CTA rises out of the garden on a wide arc and settles into a golden-hour hero shot. */
 const CTA_PATH: readonly CameraKeyframe[] = [
   { t: CTA_START, position: gardenLeavePose.position, target: gardenLeavePose.target },
-  // Rise out over the east side, clear of the neighbouring blocks, then settle into the hero shot.
-  { t: CTA_PULLBACK_PROGRESS, position: [68, 40, -26], target: [0, towerTarget[1] - 6, 0] },
-  { t: CTA_HERO_SETTLE_PROGRESS, position: [86, 44, 30], target: towerTarget },
-  { t: 1, position: [92, 42, 46], target: towerTarget },
+  // Climb north-west of the garden (clear of the neighbouring blocks), sweep east behind the tower,
+  // then ease into the wide hero view. The look-at follows the tower so the heading never snaps.
+  { t: CTA_PULLBACK_PROGRESS, position: [-6, 31, -72], target: [0, 18, -6] },
+  { t: CTA_HERO_SETTLE_PROGRESS, position: [54, 42, -66], target: towerTarget },
+  { t: 1, position: [70, 42, -46], target: towerTarget },
 ];
 
 /**
  * Lens choreography: telephoto compression while the crane climbs the tower, a wide lens inside the
- * apartment so the rooms read, then back to a calm cinematic lens for the finale.
+ * apartment so the rooms read, then back to a calm cinematic lens for the finale. The lens uses the
+ * same shared-tangent cubic-Hermite flow as the camera path, so focal length changes accelerate and
+ * settle with the move instead of easing to a stop at every keyframe.
  */
-const FOV_KEYFRAMES: readonly { t: number; fov: number }[] = [
+interface FovKeyframe {
+  t: number;
+  fov: number;
+}
+
+const FOV_KEYFRAMES: readonly FovKeyframe[] = [
   { t: 0, fov: 36 },
   { t: BUILD_START, fov: 38 },
-  { t: BUILD_END, fov: 33 },
+  { t: BUILD_END, fov: 34 },
   { t: INTERIOR_CAMERA_APPROACH_PROGRESS, fov: 42 },
-  { t: INTERIOR_CAMERA_SETTLE_PROGRESS, fov: 48 },
-  { t: INTERIOR_END, fov: 46 },
+  { t: HERO_FACADE_OPEN_START, fov: 45 },
+  { t: INTERIOR_CAMERA_SETTLE_PROGRESS, fov: 47 },
+  { t: INTERIOR_END, fov: 46.5 },
   { t: POOL_STOP_START, fov: 40 },
+  { t: GYM_STOP_START, fov: 40 },
   { t: GARDEN_STOP_START, fov: 40 },
   { t: CTA_PULLBACK_PROGRESS, fov: 34 },
   { t: 1, fov: 36 },
 ];
 
-function smoothstep(value: number): number {
-  const t = clamp01(value);
-  return t * t * (3 - 2 * t);
+function fovTangent(path: readonly FovKeyframe[], index: number): number {
+  if (index <= 0 || index >= path.length - 1) return 0;
+  const before = path[index - 1];
+  const after = path[index + 1];
+  return (0.9 * (after.fov - before.fov)) / Math.max(1e-6, after.t - before.t);
+}
+
+function sampleFovFlow(progress: number): number {
+  const value = clamp01(progress);
+  let nextIndex = FOV_KEYFRAMES.findIndex((frame) => frame.t >= value);
+  if (nextIndex < 1) nextIndex = 1;
+  const i1 = Math.min(nextIndex, FOV_KEYFRAMES.length - 1);
+  const i0 = i1 - 1;
+  const a = FOV_KEYFRAMES[i0];
+  const b = FOV_KEYFRAMES[i1];
+  if (value <= a.t || a.fov === b.fov) return a.fov;
+  if (value >= b.t) return b.fov;
+
+  const h = Math.max(1e-6, b.t - a.t);
+  const u = (value - a.t) / h;
+  const u2 = u * u;
+  const u3 = u2 * u;
+  const h00 = 2 * u3 - 3 * u2 + 1;
+  const h10 = u3 - 2 * u2 + u;
+  const h01 = -2 * u3 + 3 * u2;
+  const h11 = u3 - u2;
+  return h00 * a.fov + h10 * h * fovTangent(FOV_KEYFRAMES, i0) + h01 * b.fov + h11 * h * fovTangent(FOV_KEYFRAMES, i1);
 }
 
 function sameVec(a: Vec3, b: Vec3): boolean {
@@ -289,16 +324,9 @@ export function getCameraPose(progress: number): CameraPose {
   return sampleFlow(value, CAMERA_KEYFRAMES);
 }
 
-/** Vertical field of view in degrees for a scroll position. Pure and eased between lens keyframes. */
+/** Vertical field of view in degrees for a scroll position. Pure, and eased on the camera's flow. */
 export function getCameraFov(progress: number): number {
-  const value = clamp01(progress);
-  let nextIndex = FOV_KEYFRAMES.findIndex((frame) => frame.t >= value);
-  if (nextIndex < 1) nextIndex = 1;
-  const previous = FOV_KEYFRAMES[nextIndex - 1];
-  const next = FOV_KEYFRAMES[Math.min(nextIndex, FOV_KEYFRAMES.length - 1)];
-  if (value <= previous.t) return previous.fov;
-  if (value >= next.t) return next.fov;
-  return previous.fov + (next.fov - previous.fov) * smoothstep((value - previous.t) / (next.t - previous.t));
+  return sampleFovFlow(progress);
 }
 
 /**

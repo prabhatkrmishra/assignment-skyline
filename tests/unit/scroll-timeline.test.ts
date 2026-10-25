@@ -8,6 +8,7 @@ import {
   CTA_START,
   DOLLHOUSE_LIFT_END,
   DOLLHOUSE_LIFT_HEIGHT,
+  DOLLHOUSE_LIFT_START,
   FLOOR_COUNT,
   FLOOR_HEIGHT,
   GARDEN_STOP_END,
@@ -17,6 +18,7 @@ import {
   GYM_STOP_START,
   GYM_TEXT_START,
   HERO_FACADE_CLOSE_DURATION,
+  HERO_FACADE_OPEN_END,
   HERO_FACADE_OPEN_START,
   HERO_FLOOR_NUMBER,
   INTERIOR_CAMERA_APPROACH_PROGRESS,
@@ -182,7 +184,8 @@ describe("24-floor scene choreography", () => {
 
   it("opens only through the interior range and closes on the way to the pool", () => {
     expect(heroFacadeOpenProgress(INTERIOR_START)).toBe(0);
-    expect(heroFacadeOpenProgress((INTERIOR_START + INTERIOR_END) / 2)).toBeGreaterThan(0);
+    expect(heroFacadeOpenProgress(HERO_FACADE_OPEN_START)).toBe(0);
+    expect(heroFacadeOpenProgress((HERO_FACADE_OPEN_START + HERO_FACADE_OPEN_END) / 2)).toBeGreaterThan(0);
     expect(heroFacadeOpenProgress(INTERIOR_END)).toBeGreaterThan(0.99);
     expect(heroFacadeOpenProgress(AMENITIES_START + HERO_FACADE_CLOSE_DURATION + 1e-6)).toBe(0);
     expect(heroFacadeOpenProgress(1)).toBe(0);
@@ -200,6 +203,34 @@ describe("24-floor scene choreography", () => {
       expect(value).toBeGreaterThanOrEqual(previous - 1e-9);
       previous = value;
     }
+  });
+
+  it("finishes the camera crane before the cutaway moves, then peels only after the lift", () => {
+    expect(INTERIOR_CAMERA_APPROACH_PROGRESS).toBeLessThanOrEqual(DOLLHOUSE_LIFT_START);
+    expect(DOLLHOUSE_LIFT_END).toBeLessThanOrEqual(HERO_FACADE_OPEN_START);
+    const peakSpeed = (start: number, end: number) => {
+      const step = 0.00025;
+      let peak = 0;
+      let previous = getCameraPose(start).position;
+      for (let p = start + step; p <= end + 1e-12; p += step) {
+        const position = getCameraPose(Math.min(p, end)).position;
+        peak = Math.max(peak, Math.hypot(
+          position[0] - previous[0],
+          position[1] - previous[1],
+          position[2] - previous[2],
+        ) / (step * STORY_SCROLL_VH));
+        previous = position;
+      }
+      return peak;
+    };
+    const descent = peakSpeed(INTERIOR_START, INTERIOR_CAMERA_APPROACH_PROGRESS);
+    const lift = peakSpeed(DOLLHOUSE_LIFT_START, DOLLHOUSE_LIFT_END);
+    const facade = peakSpeed(HERO_FACADE_OPEN_START, HERO_FACADE_OPEN_END);
+    expect(descent).toBeGreaterThan(70);
+    expect(lift).toBeLessThan(40);
+    expect(facade).toBeLessThan(45);
+    expect(lift).toBeLessThan(descent * 0.5);
+    expect(facade).toBeLessThan(descent * 0.55);
   });
 
   it("stagger-fades room labels in after the facade opens, and out before leaving Scene 3", () => {

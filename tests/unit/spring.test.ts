@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createSpring, isSettled, smoothDamp } from "@/lib/scroll/spring";
+import { SCROLL_SPRING } from "@/lib/scroll/timeline";
 
 type Stepper = (target: number, dt: number) => number;
 
@@ -37,7 +38,7 @@ const oldLerp = (): Stepper => {
 };
 const spring = (): Stepper => {
   const state = createSpring(0);
-  return (target, dt) => smoothDamp(state, target, 0.55, dt, 0.85);
+  return (target, dt) => smoothDamp(state, target, SCROLL_SPRING.smoothTime, dt, SCROLL_SPRING.maxSpeed);
 };
 
 describe("critically damped scroll spring", () => {
@@ -64,11 +65,34 @@ describe("critically damped scroll spring", () => {
     let previous = 0;
     let peak = 0;
     for (let i = 0; i < 600 && state.value < 0.999; i += 1) {
-      const value = smoothDamp(state, 1, 0.55, 1 / 60, 0.85);
+      const value = smoothDamp(state, 1, SCROLL_SPRING.smoothTime, 1 / 60, SCROLL_SPRING.maxSpeed);
       peak = Math.max(peak, (value - previous) * 60);
       previous = value;
     }
-    expect(peak).toBeLessThanOrEqual(0.85 * 1.05);
+    expect(peak).toBeLessThanOrEqual(SCROLL_SPRING.maxSpeed * 1.05);
+  });
+
+  it("reverses direction without overshooting or snapping", () => {
+    const state = createSpring(0);
+    const dt = 1 / 60;
+    for (let i = 0; i < 30; i += 1) smoothDamp(state, 0.6, SCROLL_SPRING.smoothTime, dt, SCROLL_SPRING.maxSpeed);
+    const turningPoint = state.value;
+    let previous = turningPoint;
+    let previousSpeed = (state.value - previous) / dt;
+    let biggestChange = 0;
+    let peakBackward = 0;
+    for (let i = 0; i < 600; i += 1) {
+      const value = smoothDamp(state, 0.1, SCROLL_SPRING.smoothTime, dt, SCROLL_SPRING.maxSpeed);
+      const speed = (value - previous) / dt;
+      biggestChange = Math.max(biggestChange, Math.abs(speed - previousSpeed));
+      peakBackward = Math.min(peakBackward, speed);
+      previous = value;
+      previousSpeed = speed;
+    }
+    expect(previous).toBeGreaterThanOrEqual(0.1 - 5e-4);
+    expect(previous).toBeLessThan(0.1 + 5e-4);
+    expect(Math.abs(peakBackward)).toBeLessThanOrEqual(SCROLL_SPRING.maxSpeed * 1.05);
+    expect(biggestChange).toBeLessThan(SCROLL_SPRING.maxSpeed * 90);
   });
 
   it("is safe with zero, huge or repeated frame times and reports when it has settled", () => {

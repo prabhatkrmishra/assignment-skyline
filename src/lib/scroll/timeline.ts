@@ -27,19 +27,19 @@
  * numbers. To slow a move down, raise its number. Nothing else needs to change.
  */
 export const STORY_BEATS_VH = Object.freeze({
-  arrival: 0.615,
+  arrival: 1.35,
   build: 1.025,
-  interior: 1.025,
+  interior: 1.8,
   /** Crane down from the apartment to the pool. */
-  toPool: 0.65,
+  toPool: 1.25,
   poolHold: 0.3,
   /** Orbit across the front of the tower to the gym. */
-  toGym: 0.7,
+  toGym: 1.2,
   gymHold: 0.3,
-  /** Long orbit behind the tower to the garden. */
-  toGarden: 1.35,
+  /** Orbit around the west and back of the tower to the garden. */
+  toGarden: 2.8,
   gardenHold: 0.3,
-  callToAction: 1.0,
+  callToAction: 2.65,
 });
 
 const BEATS = STORY_BEATS_VH;
@@ -49,6 +49,16 @@ export const STORY_SCROLL_VH =
   + BEATS.gymHold + BEATS.toGarden + BEATS.gardenHold + BEATS.callToAction;
 /** Section height in vh (the sticky stage fills one viewport on top of the scrollable distance). */
 export const STORY_SHELL_HEIGHT_VH = Math.round((STORY_SCROLL_VH + 1) * 100);
+
+/**
+ * One spring for scroll -> progress, shared by wheel, trackpad, touch and scrollbar input.
+ * `smoothTime` is the weight of the camera; `maxSpeed` (progress per second) makes a scrollbar jump
+ * travel instead of whip: at 0.6 the full story takes at least ~1.7 s. Nothing else may smooth progress.
+ */
+export const SCROLL_SPRING = Object.freeze({
+  smoothTime: 0.5,
+  maxSpeed: 0.6,
+});
 
 const T_ARRIVAL_END = BEATS.arrival;
 const T_BUILD_END = T_ARRIVAL_END + BEATS.build;
@@ -93,36 +103,38 @@ const interior = (fraction: number): number => INTERIOR_START + fraction * INTER
 
 /**
  * Scene 3 ("Inside a home") sub-beats, as fractions of the scene:
- *   0.00-0.32  dollhouse lift: Floors 13-24 (and the rooftop) rise as ONE group, opening the roof of Floor_12
- *   0.24-0.48  Floor_12 Facade_Front alone lifts up and fades; every other facade on every floor stays closed
- *   0.48-0.75  room labels stagger in, pinned to world positions inside the rooms
- *   0.68-1.00  camera settles into the elevated 3/4 view and glides slowly while the labels read
+ *   0.00-0.48  camera crane descends from the crown to the hero facade; tower stays closed
+ *   0.50-0.64  dollhouse lift: Floors 13-24 (and the rooftop) rise as ONE group, opening the roof of Floor_12
+ *   0.66-0.76  Floor_12 Facade_Front alone lifts up and fades; every other facade on every floor stays closed
+ *   0.78-1.00  camera settles into the elevated 3/4 view while the room labels read
+ * The three big motions are deliberately serial: the descent ends before the lift starts, and the
+ * facade opens only after the lift has finished, so the eye is never asked to track two moves at once.
  * Closing mirrors this inside the first part of the move to the pool.
  */
 export const HERO_FACADE_CLOSE_DURATION = TO_POOL_LENGTH * 0.25;
-export const DOLLHOUSE_LIFT_START = INTERIOR_START;
-export const DOLLHOUSE_LIFT_END = interior(0.32);
+export const DOLLHOUSE_LIFT_START = interior(0.5);
+export const DOLLHOUSE_LIFT_END = interior(0.64);
 export const DOLLHOUSE_DROP_DURATION = TO_POOL_LENGTH * 0.4;
 /** World units that Floors 13-24 rise. Must clear the hero ceiling and the camera's sight line. */
 export const DOLLHOUSE_LIFT_HEIGHT = 8;
-export const HERO_FACADE_OPEN_START = interior(0.24);
-export const HERO_FACADE_OPEN_END = interior(0.48);
+export const HERO_FACADE_OPEN_START = interior(0.66);
+export const HERO_FACADE_OPEN_END = interior(0.76);
 /** The hero front panel lifts straight up into the gap; it never travels across the building. */
 export const HERO_FACADE_LIFT_DISTANCE = 3.4;
 
 // Camera beats are named here so all timing stays editable.
 export const ARRIVAL_ORBIT_MIDPOINT = ARRIVAL_END / 2;
-export const INTERIOR_CAMERA_APPROACH_PROGRESS = interior(0.32);
-export const INTERIOR_CAMERA_SETTLE_PROGRESS = interior(0.68);
+export const INTERIOR_CAMERA_APPROACH_PROGRESS = interior(0.48);
+export const INTERIOR_CAMERA_SETTLE_PROGRESS = interior(0.88);
 export const CTA_PULLBACK_PROGRESS = CTA_START + (1 - CTA_START) * 0.45;
-export const CTA_HERO_SETTLE_PROGRESS = CTA_START + (1 - CTA_START) * 0.8;
+export const CTA_HERO_SETTLE_PROGRESS = CTA_START + (1 - CTA_START) * 0.85;
 export const ROOM_LABEL_STARTS = Object.freeze({
-  living: interior(0.48),
-  bedroom: interior(0.54),
-  kitchen: interior(0.6),
-  balcony: interior(0.66),
+  living: interior(0.79),
+  bedroom: interior(0.82),
+  kitchen: interior(0.85),
+  balcony: interior(0.87),
 });
-export const ROOM_LABEL_ENTER_DURATION = INTERIOR_LENGTH * 0.09;
+export const ROOM_LABEL_ENTER_DURATION = INTERIOR_LENGTH * 0.04;
 export const ROOM_LABEL_EXIT_DURATION = INTERIOR_LENGTH * 0.07;
 
 /**
