@@ -57,6 +57,18 @@ test.describe("Skyline user journeys", () => {
     await expect(page.locator("#tower canvas")).toHaveCount(1, { timeout: 15_000 });
   });
 
+  test("paints an inline preview for listing photos while the optimized image is still loading", async ({ page }) => {
+    // Stall the optimizer so the assertion is about the preview, not about network timing.
+    await page.route("**/_next/image**", (route) => void route.abort());
+    await page.goto("/properties");
+
+    const preview = () => page.evaluate(() => {
+      const img = document.querySelector<HTMLImageElement>(".property-card__visual img");
+      return img ? getComputedStyle(img).backgroundImage : "";
+    });
+    await expect.poll(preview).toContain("data:image");
+  });
+
   test("skip animation jumps from the 3D story to the philosophy section and scrolling back stays reversible", async ({ page }) => {
     await page.goto("/");
     await page.locator("#tower").scrollIntoViewIfNeeded();
