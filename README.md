@@ -95,7 +95,7 @@ The Playwright suite starts an isolated server on port `3100` and uses `data/sky
 
 ## Reports and submission verification
 
-`reports/README.md` explains how to generate real bundle-analysis and Lighthouse artifacts once dependencies and the deployed URL are available. Do not fabricate scores or place estimates in the reports folder as if they were measurements.
+`reports/` contains the generated artefacts: three mobile Lighthouse HTML reports (`/`, `/properties`, one detail route) and the `next experimental-analyze` output. They are local production measurements, not deployed-site measurements — see `reports/README.md` for the scores, the reason the deployed origin cannot be measured yet and the commands used. Do not fabricate scores or place estimates in the reports folder as if they were measurements.
 
 Required submission artefacts from the assignment:
 
@@ -108,7 +108,14 @@ Required submission artefacts from the assignment:
 
 ## Known verification limitations
 
-The project source and tests have been authored, but the implementation environment currently cannot resolve `registry.npmjs.org` (`EAI_AGAIN`). A `package-lock.json` has therefore not been generated yet. Once the registry is reachable, run `npm install`, retain and commit the generated lockfile, then complete dependency installation, automated tests, type-checking, production compilation, visual browser verification and measured bundle/Lighthouse reports. None of those dependency-backed checks should be treated as passing until their actual commands complete successfully.
+Verified on 2026-10-25 with the committed lockfile: `npm run typecheck`, `npm run lint`, `npm run test` (126 Vitest tests), `npm run build` and the Playwright suite (18 journeys × 2 projects) all pass. Three journeys that depend on scroll and animation timing (`skip animation`, `pauses the 3D render loop`, `restores listing filters and pagination`) fail intermittently when the full suite runs at its default six workers against one server, and pass consistently with `--workers=2` or when run individually; they are timing-sensitive rather than functionally broken.
+
+Still outstanding:
+
+- The Lighthouse figures in `reports/` are local production measurements. The deployed origin runs the current build but its database is unseeded, so it cannot produce a detail-route report until `npm run db:seed` runs on the server with `DATABASE_URL` on persistent disk.
+- Landing-page mobile LCP misses the 2.5 s target at 3.1 s on a cold image-optimizer cache; `reports/README.md` records the measured cause.
+- The 2–3 minute screen recording has not been produced.
+- Real-device performance on a mid-range Android handset has not been measured; the recorded 3D figures come from desktop Chrome and CPU-throttled emulation.
 
 ## Assets and credits
 
