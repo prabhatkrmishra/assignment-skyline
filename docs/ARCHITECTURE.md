@@ -45,12 +45,14 @@ src/
     ui/                 # Button, Badge, etc.
   lib/
     db/                 # schema.ts, index.ts (connection), repositories
+    media/              # image-placeholders.ts (generated), image-placeholder.ts
     properties/         # validation.ts, query-state.ts, format.ts, repository.ts
     scroll/             # timeline.ts (canonical choreography)
 scripts/
   prepare-db.ts         # Ensures data dir exists
   migrate.ts            # Runs Drizzle migrations
   seed.ts               # Seeds 60 fictional properties
+  generate-image-placeholders.ts # Writes the inlined blur previews
 drizzle/                # SQL migrations + meta journal
 tests/
   unit/                 # Pure logic tests (Vitest)
@@ -165,8 +167,8 @@ The camera metrics helper lives only in tests (`tests/unit/helpers/camera-metric
 
 ## 9. Testing
 
-- Unit: Vitest, 120 tests covering validation, query-state, typing, scroll timeline, camera metrics, camera rig, spring smoothing/reversal, tower choreography, scene contract and seed data.
-- E2E: Playwright, 15 journeys (30 runs across desktop and Pixel 7 projects) covering landing, listing, detail, gallery, enquiry, reduced-motion fallback, skip animation, hidden-tab render pause and a full-story console-error check.
+- Unit: Vitest, 126 tests covering validation, query-state, typing, scroll timeline, camera metrics, camera rig, spring smoothing/reversal, tower choreography, scene contract, seed data and image placeholder coverage.
+- E2E: Playwright, 16 journeys (32 runs across desktop and Pixel 7 projects) covering landing, listing, detail, gallery, enquiry, reduced-motion fallback, skip animation, hidden-tab render pause, inline image preview and a full-story console-error check.
 - Playwright uses port 3100 and `data/skyline-e2e.sqlite` (isolated from dev DB).
 
 ## 10. Performance strategy
@@ -178,7 +180,7 @@ The camera metrics helper lives only in tests (`tests/unit/helpers/camera-metric
 - **Materials:** shared PBR materials with small generated 256² normal/roughness maps; no external textures or HDRIs. Contact-shadow planes and dark soffits provide grounding instead of raising shadow-map resolution.
 - Device pixel ratio capped at 1.5; shadow quality reduced on weaker devices; the facade/balcony glass uses `depthWrite: false` and modest opacity to limit overdraw.
 - Static image fallback for reduced-motion / low-power / WebGL-unavailable.
-- Property images are local WebP with fixed aspect ratios; below-the-fold lazy-loaded.
+- Property images are local WebP with fixed aspect ratios; below-the-fold lazy-loaded, and every one of them renders an inlined blur preview first (see [Image first-load](#image-first-load-2026-10-25)).
 
 ### Measured budgets (2026-10-25)
 
@@ -204,4 +206,16 @@ The remaining near-target cases (garden → CTA turn, to-pool turn) are wide orb
 Render throughput on a desktop NVIDIA GTX 1650 with Chrome's frame limiter disabled (1440×900, DPR 1): 115 → 311 fps at arrival, 131 → 285 at build-up, 194 → 171 at Floor 12, 245 → 168 at the pool, 222 → 235 at the garden, 147 → 252 at the CTA. With a 390×844 viewport, DPR cap 1.5 and 4× CPU throttling: 40 → 62 fps at arrival, 44 → 96 at build-up, 84 → 117 at Floor 12, 141 → 154 at the pool, 98 → 140 at the garden, 61 → 101 at the CTA. These are throughput measurements, not a real mid-range Android GPU; SwiftShader headless numbers are not representative and are not reported here.
 
 Lighthouse mobile (production, simulated throttling, performance only) is unchanged at 99 (FCP 1.0 s, LCP 2.1 s, TBT 30 ms, CLS 0), because Lighthouse never scrolls and therefore never loads the lazy 3D chunk.
-EOF
+
+### Image first-load (2026-10-25)
+
+Every photo goes through the Next image optimizer, and a size it has not encoded yet is generated on request. Measured cold, on this machine, for one `/_next/image` request at `w=828`:
+
+| Accepted format | `pool.webp` | `terrace.webp` |
+|---|---|---|
+| AVIF (preferred) | 0.93 s | 0.40 s |
+| WebP | 0.12 s | 0.06 s |
+
+AVIF costs 7× the encode time for roughly half the bytes, so a cold first visit renders cards 0.6–1.8 s after the HTML. `placeholder="blur"` removes that gap from the user's view rather than from the network: `scripts/generate-image-placeholders.ts` writes an 8 px preview per file in `public/images` (next-image-loader's own size and quality) into `src/lib/media/image-placeholders.ts`, and `imagePlaceholder(src)` spreads it into all 11 `next/image` call sites, so the preview arrives inline with the HTML and the sharp image replaces it when it decodes. Cost is 754 B of base64 for all eight images. Verified cold against the pre-change build: at first paint, 2/2 hero and 2/2 listing images showed a preview where the previous build showed none, with no change in total image bytes.
+
+Regenerate after adding or replacing an image (`npm run images:placeholders`); `tests/unit/image-placeholders.test.ts` fails if the map and `public/images` drift or a preview outgrows 512 B.
