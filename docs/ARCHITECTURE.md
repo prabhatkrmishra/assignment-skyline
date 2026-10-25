@@ -36,8 +36,8 @@ src/
     layout.tsx          # Root layout, fonts, theme provider
     page.tsx            # Landing page
   components/
-    enquiry/            # EnquiryForm (client)
-    landing/            # TowerStory, three-d/ (TowerCanvas, ScrollTimeline)
+    enquiry/            # EnquiryForm (client), EnquiryPicker (client, residence chooser)
+    landing/            # TowerStory, EnquirySection, three-d/ (TowerCanvas, ScrollTimeline)
     layout/             # SiteHeader, SiteFooter, ThemeProvider
     properties/         # PropertyCard, PropertyFilters, PropertyGallery, PropertyFacts
     three/              # TowerScene, Floor, Facade, Balcony, Landscape, Materials, Surfaces,
@@ -168,7 +168,7 @@ The camera metrics helper lives only in tests (`tests/unit/helpers/camera-metric
 ## 9. Testing
 
 - Unit: Vitest, 126 tests covering validation, query-state, typing, scroll timeline, camera metrics, camera rig, spring smoothing/reversal, tower choreography, scene contract, seed data and image placeholder coverage.
-- E2E: Playwright, 16 journeys (32 runs across desktop and Pixel 7 projects) covering landing, listing, detail, gallery, enquiry, reduced-motion fallback, skip animation, hidden-tab render pause, inline image preview and a full-story console-error check.
+- E2E: Playwright, 18 journeys (36 runs across desktop and Pixel 7 projects) covering landing, listing, detail, gallery, enquiry (detail page and the landing chooser), reduced-motion fallback, skip animation, hidden-tab render pause, inline image preview and a full-story console-error check.
 - Playwright uses port 3100 and `data/skyline-e2e.sqlite` (isolated from dev DB).
 
 ## 10. Performance strategy
@@ -205,7 +205,7 @@ The remaining near-target cases (garden → CTA turn, to-pool turn) are wide orb
 
 Render throughput on a desktop NVIDIA GTX 1650 with Chrome's frame limiter disabled (1440×900, DPR 1): 115 → 311 fps at arrival, 131 → 285 at build-up, 194 → 171 at Floor 12, 245 → 168 at the pool, 222 → 235 at the garden, 147 → 252 at the CTA. With a 390×844 viewport, DPR cap 1.5 and 4× CPU throttling: 40 → 62 fps at arrival, 44 → 96 at build-up, 84 → 117 at Floor 12, 141 → 154 at the pool, 98 → 140 at the garden, 61 → 101 at the CTA. These are throughput measurements, not a real mid-range Android GPU; SwiftShader headless numbers are not representative and are not reported here.
 
-Lighthouse mobile (production, simulated throttling, performance only) is unchanged at 99 (FCP 1.0 s, LCP 2.1 s, TBT 30 ms, CLS 0), because Lighthouse never scrolls and therefore never loads the lazy 3D chunk.
+Lighthouse mobile (production, simulated throttling, cold image-optimizer cache) measures the landing page at performance 93 with FCP 1.1 s, LCP 3.1 s, TBT 85 ms and CLS 0; it never scrolls, so it never loads the lazy 3D chunk. `reports/README.md` carries the generated reports and the reason the landing LCP misses the 2.5 s target.
 
 ### Image first-load (2026-10-25)
 
