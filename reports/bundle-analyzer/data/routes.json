@@ -1,0 +1,11 @@
+[
+  "/api/properties/[slug]",
+  "/api/properties/[slug]/similar",
+  "/properties/[slug]",
+  "/",
+  "/_not-found",
+  "/api/enquiries",
+  "/api/properties",
+  "/icon.svg",
+  "/properties"
+]
