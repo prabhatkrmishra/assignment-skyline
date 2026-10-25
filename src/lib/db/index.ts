@@ -44,9 +44,12 @@ type DatabaseGlobals = typeof globalThis & {
 const globalForDatabase = globalThis as DatabaseGlobals;
 
 const sqlite = globalForDatabase.skylineSqlite ?? new Database(databasePath);
+// busy_timeout must be set before journal_mode: `next build` evaluates route modules in parallel
+// workers, and the WAL conversion is a write that collides with the other workers' locks. Without a
+// timeout the first SQLITE_BUSY aborts the build.
+sqlite.pragma("busy_timeout = 5000");
 sqlite.pragma("foreign_keys = ON");
 sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("busy_timeout = 5000");
 
 /** Drizzle database instance. */
 export const db = globalForDatabase.skylineDrizzle ?? drizzle(sqlite, { schema });
