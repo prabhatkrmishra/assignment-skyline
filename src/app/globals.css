@@ -470,6 +470,11 @@ textarea.form-control { min-height: 118px; resize: vertical; line-height: 1.7; }
 .form-success { display: flex; align-items: flex-start; flex-direction: column; gap: .75rem; min-height: 270px; padding-block: 2rem; color: var(--moss); }
 .form-success h3 { margin: .5rem 0 0; color: var(--ink); font-family: var(--serif); font-size: 2rem; font-weight: 400; }
 .form-success p { margin: 0 0 .5rem; color: var(--muted); font-size: .82rem; line-height: 1.7; }
+/* Landing-page enquiry, sharing the detail page's card and field styles */
+.landing-enquiry { display: grid; grid-template-columns: 1fr minmax(0, 820px) 1fr; padding-block: clamp(4rem, 8vw, 7.5rem); background: var(--paper); }
+.enquiry-picker { grid-column: 2; display: grid; gap: 1.15rem; }
+.enquiry-picker > .enquiry-card { grid-column: 1; }
+.enquiry-picker__choose { grid-column: 1; padding: 1rem 1.15rem; border: 1px solid rgba(43,51,43,.17); background: #f7f4ec; }
 .icon-spin { animation: icon-spin 1s linear infinite; }
 @keyframes icon-spin { to { transform: rotate(360deg); } }
 .similar-section { background: #ebe7dd; }
@@ -527,6 +532,8 @@ textarea.form-control { min-height: 118px; resize: vertical; line-height: 1.7; }
   .detail-spec-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .detail-enquiry-wrap { grid-template-columns: 1fr; }
   .enquiry-card { grid-column: 1; }
+  .landing-enquiry { grid-template-columns: 1fr; }
+  .enquiry-picker { grid-column: 1; }
 }
 
 @media (max-width: 520px) {

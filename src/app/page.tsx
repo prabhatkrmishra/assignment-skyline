@@ -25,6 +25,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { TowerStory } from "@/components/landing/TowerStory";
 import { PhilosophySection } from "@/components/landing/PhilosophySection";
 import { FeaturedHomes } from "@/components/landing/FeaturedHomes";
+import { EnquirySection } from "@/components/landing/EnquirySection";
 import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 export const metadata: Metadata = {
@@ -77,6 +78,8 @@ export default function HomePage() {
       </section>
 
       <FeaturedHomes />
+
+      <EnquirySection />
 
       <section className="closing-cta page-gutter">
         <div className="closing-cta__copy">
