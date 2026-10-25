@@ -15,6 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { PhilosophyReveal } from "@/components/landing/PhilosophyReveal";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 /** Section id; the story's "Skip animation" button and the header navigation both target it. */
 export const PHILOSOPHY_ID = "philosophy";
@@ -35,7 +36,7 @@ export function PhilosophySection() {
       </div>
       <figure className="philosophy__figure">
         <div className="philosophy__image">
-          <Image src="/images/properties/terrace.webp" alt="A quiet terrace with soft evening light and planted greenery" fill sizes="(max-width: 900px) 70vw, 28vw" quality={80} />
+          <Image src="/images/properties/terrace.webp" alt="A quiet terrace with soft evening light and planted greenery" fill sizes="(max-width: 900px) 70vw, 28vw" quality={80} {...imagePlaceholder("/images/properties/terrace.webp")} />
         </div>
       </figure>
     </PhilosophyReveal>

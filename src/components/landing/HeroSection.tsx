@@ -16,6 +16,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { TypingHeadline } from "@/components/landing/TypingHeadline";
 import { HERO_HEADLINE } from "@/components/landing/typing";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 /** First viewport of the landing page. */
 export function HeroSection() {
@@ -43,6 +44,7 @@ export function HeroSection() {
           fetchPriority="high"
           sizes="(max-width: 900px) 100vw, 48vw"
           quality={85}
+          {...imagePlaceholder("/images/landing/tower-poster.webp")}
         />
         <span className="image-caption">The Skyline tower at golden hour</span>
       </div>

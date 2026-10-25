@@ -25,6 +25,7 @@ import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowDown, ArrowUpRight, ChevronsDown } from "@/components/ui/icons";
 import { AMENITIES_START, CTA_START, STORY_SHELL_HEIGHT_VH, amenityIndexAtProgress, sceneIndexAtProgress } from "@/lib/scroll/timeline";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 const LazyTowerCanvas = dynamic(() => import("@/components/landing/three-d/TowerCanvas"), {
   ssr: false,
@@ -119,14 +120,14 @@ function StaticStory() {
         const image = STATIC_SCENE_IMAGES[index];
         return (
           <section className="story-static-card" key={scene.eyebrow}>
-            <Image src={image} alt="" fill sizes="100vw" quality={80} />
+            <Image src={image} alt="" fill sizes="100vw" quality={80} {...imagePlaceholder(image)} />
             <div className="story-static-card__shade" />
             <div className="story-copy page-gutter">
               <span className="eyebrow eyebrow--light">{scene.eyebrow}</span>
               <h2>{scene.title}</h2>
               <p>{scene.body}</p>
               <span className="story-copy__tag">{index === 3 ? amenitySlides[0].tag : scene.tag}</span>
-              {index === 3 ? <div className="story-static-amenities">{amenitySlides.map((amenity) => <article key={amenity.tag}><Image src={amenity.image} alt="" fill sizes="(max-width: 600px) 70vw, 18vw" quality={80} /><span>{amenity.tag}</span><strong>{amenity.title}</strong></article>)}</div> : null}
+              {index === 3 ? <div className="story-static-amenities">{amenitySlides.map((amenity) => <article key={amenity.tag}><Image src={amenity.image} alt="" fill sizes="(max-width: 600px) 70vw, 18vw" quality={80} {...imagePlaceholder(amenity.image)} /><span>{amenity.tag}</span><strong>{amenity.title}</strong></article>)}</div> : null}
               {index === scenes.length - 1 ? <Link className="button button--light" href="/properties">Explore homes <ArrowUpRight size={16} aria-hidden="true" /></Link> : null}
             </div>
           </section>
@@ -260,7 +261,7 @@ export function TowerStory() {
     <section id="tower" ref={storyRef} className="story-shell" style={{ "--story-height-vh": STORY_SHELL_HEIGHT_VH } as CSSProperties} aria-label="The Skyline story">
       <div className="story-stage">
         <div className="story-stage__poster-frame">
-          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill sizes="100vw" quality={85} />
+          <Image className="story-stage__poster" src="/images/landing/tower-poster.webp" alt="Architectural rendering of Skyline's landscaped residential tower at sunset" fill sizes="100vw" quality={85} {...imagePlaceholder("/images/landing/tower-poster.webp")} />
         </div>
         <div className="story-stage__wash" aria-hidden="true" />
         {shouldLoad ? <LazyTowerCanvas scrollContainerRef={storyRef} onUnsupported={handleUnsupported} /> : null}

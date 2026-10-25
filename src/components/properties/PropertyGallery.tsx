@@ -20,6 +20,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Expand } from "@/components/ui/icons";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 interface PropertyGalleryProps {
   images: string[];
@@ -49,7 +50,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       if (event.key === "ArrowRight") next();
     }}>
       <div className="property-gallery__main">
-        <Image key={activeIndex} className="property-gallery__image" src={safeImages[activeIndex]} alt={`${title}, image ${activeIndex + 1} of ${safeImages.length}`} fill loading="eager" fetchPriority="high" sizes="(max-width: 900px) 100vw, 64vw" quality={85} />
+        <Image key={activeIndex} className="property-gallery__image" src={safeImages[activeIndex]} alt={`${title}, image ${activeIndex + 1} of ${safeImages.length}`} fill loading="eager" fetchPriority="high" sizes="(max-width: 900px) 100vw, 64vw" quality={85} {...imagePlaceholder(safeImages[activeIndex])} />
         <span className="property-gallery__counter">0{activeIndex + 1} <i /> 0{safeImages.length}</span>
         <div className="property-gallery__controls">
           <button type="button" aria-label="Previous property image" onClick={previous}><ArrowLeft size={18} /></button>
@@ -62,7 +63,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
       <div className="property-gallery__thumbs" aria-label="Choose an image">
         {safeImages.map((image, index) => (
           <button className={index === activeIndex ? "is-active" : ""} type="button" key={image} onClick={() => setActive(index)} aria-label={`Show image ${index + 1}`} aria-pressed={index === activeIndex}>
-            <Image src={image} alt="" fill sizes="(max-width: 900px) 28vw, 12vw" quality={70} />
+            <Image src={image} alt="" fill sizes="(max-width: 900px) 28vw, 12vw" quality={70} {...imagePlaceholder(image)} />
           </button>
         ))}
       </div>
@@ -82,7 +83,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
             <button type="button" onClick={() => setExpanded(false)} aria-label="Close image viewer">Close <span aria-hidden="true">×</span></button>
           </div>
           <div className="property-lightbox__image">
-            <Image src={safeImages[activeIndex]} alt={`${title}, enlarged image ${activeIndex + 1} of ${safeImages.length}`} fill sizes="94vw" quality={85} />
+            <Image src={safeImages[activeIndex]} alt={`${title}, enlarged image ${activeIndex + 1} of ${safeImages.length}`} fill sizes="94vw" quality={85} {...imagePlaceholder(safeImages[activeIndex])} />
           </div>
           {safeImages.length > 1 ? (
             <div className="property-lightbox__controls">

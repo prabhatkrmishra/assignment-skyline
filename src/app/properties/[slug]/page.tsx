@@ -27,6 +27,7 @@ import { EnquiryForm } from "@/components/enquiry/EnquiryForm";
 import { getPropertyBySlug, getSimilarPropertiesFor } from "@/lib/properties/repository";
 import { formatArea, formatPrice } from "@/lib/properties/format";
 import { getTodayInIndia } from "@/lib/properties/date";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +95,7 @@ export default async function PropertyDetailPage({ params }: RouteContext) {
 
           <section className="location-card" aria-labelledby="location-heading">
             <div className="location-card__copy"><span className="eyebrow">A PLACE IN THE CITY</span><h2 id="location-heading">Well placed.<br /><em>Well connected.</em></h2><p>{property.locality}, {property.city}, {property.state}, India</p><a className="text-link" href={mapUrl} target="_blank" rel="noreferrer">Open in Google Maps <ArrowUpRight size={15} aria-hidden="true" /></a></div>
-            <div className="location-card__visual"><Image src="/images/properties/terrace.webp" alt="Landscaped terrace representing the calm of the neighbourhood" fill sizes="(max-width: 800px) 100vw, 36vw" quality={80} /><div className="location-card__pin"><MapPin size={22} aria-hidden="true" /><span>{property.locality.toUpperCase()}</span></div><span className="location-card__coordinates">INDIA · RESIDENTIAL COLLECTION</span></div>
+            <div className="location-card__visual"><Image src="/images/properties/terrace.webp" alt="Landscaped terrace representing the calm of the neighbourhood" fill sizes="(max-width: 800px) 100vw, 36vw" quality={80} {...imagePlaceholder("/images/properties/terrace.webp")} /><div className="location-card__pin"><MapPin size={22} aria-hidden="true" /><span>{property.locality.toUpperCase()}</span></div><span className="location-card__coordinates">INDIA · RESIDENTIAL COLLECTION</span></div>
           </section>
         </div>
 

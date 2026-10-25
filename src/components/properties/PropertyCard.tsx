@@ -21,6 +21,7 @@ import type { CSSProperties } from "react";
 import { ArrowUpRight, BedDouble, MapPin, Ruler } from "@/components/ui/icons";
 import { formatArea, formatPrice } from "@/lib/properties/format";
 import type { Property } from "@/lib/properties/types";
+import { imagePlaceholder } from "@/lib/media/image-placeholder";
 
 interface PropertyCardProps {
   property: Property;
@@ -44,6 +45,7 @@ export function PropertyCard({ property, index, showIndex = false, sizes = FEATU
           fill
           sizes={sizes}
           quality={80}
+          {...imagePlaceholder(cover)}
         />
         <span className="property-card__type">{property.propertyType}</span>
         {showIndex && index !== undefined ? <span className="property-card__index">0{index + 1}</span> : null}
