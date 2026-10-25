@@ -22,6 +22,7 @@ const links = [
   { href: "/properties", label: "Residences" },
   { href: "/#amenities", label: "The experience" },
   { href: "/#philosophy", label: "Our philosophy" },
+  { href: "/#enquire", label: "Enquire" },
 ];
 
 /** Site header with navigation and theme toggle. */
