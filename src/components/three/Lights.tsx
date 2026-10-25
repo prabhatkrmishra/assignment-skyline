@@ -57,20 +57,63 @@ export function createProceduralEnvironment(): THREE.CanvasTexture {
 
   const sky = context.createLinearGradient(0, 0, 0, canvas.height);
   sky.addColorStop(0, "#6f8fb5");
-  sky.addColorStop(0.32, "#b8c6d0");
-  sky.addColorStop(0.58, "#e8b07a");
-  sky.addColorStop(0.78, "#c98a62");
-  sky.addColorStop(1, "#6b5a52");
+  sky.addColorStop(0.3, "#a9bfd1");
+  sky.addColorStop(0.52, "#e7c9a3");
+  sky.addColorStop(0.62, "#e0a878");
+  sky.addColorStop(0.72, "#8d7466");
+  sky.addColorStop(1, "#584b44");
   context.fillStyle = sky;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  const sunGlow = context.createRadialGradient(780, 300, 4, 780, 300, 220);
-  sunGlow.addColorStop(0, "rgba(255,235,190,0.98)");
-  sunGlow.addColorStop(0.18, "rgba(255,214,159,0.55)");
-  sunGlow.addColorStop(0.45, "rgba(255,180,120,0.18)");
+  const sunGlow = context.createRadialGradient(788, 292, 6, 788, 292, 240);
+  sunGlow.addColorStop(0, "rgba(255,245,214,1)");
+  sunGlow.addColorStop(0.12, "rgba(255,226,170,0.72)");
+  sunGlow.addColorStop(0.38, "rgba(255,192,132,0.24)");
   sunGlow.addColorStop(1, "rgba(255,214,159,0)");
   context.fillStyle = sunGlow;
-  context.fillRect(500, 50, 524, 462);
+  context.fillRect(500, 20, 524, 480);
+  context.fillStyle = "rgba(255,248,225,0.95)";
+  context.beginPath();
+  context.arc(788, 292, 21, 0, Math.PI * 2);
+  context.fill();
+
+  // Distant city silhouette and a warm haze band give glass and water something to reflect.
+  const horizon = 330;
+  context.fillStyle = "rgba(96,100,100,0.5)";
+  let seed = 9173;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let x = -10; x < canvas.width + 10;) {
+    const width = 14 + random() * 36;
+    const height = 10 + random() * 46;
+    context.fillStyle = `rgba(${72 + Math.floor(random() * 26)},${75 + Math.floor(random() * 24)},${76 + Math.floor(random() * 22)},0.34)`;
+    context.fillRect(x, horizon - height, width, height + 12);
+    for (let wx = x + 3; wx < x + width - 3; wx += 6) {
+      for (let wy = horizon - height + 5; wy < horizon - 4; wy += 8) {
+        if (random() > 0.55) {
+          context.fillStyle = random() > 0.3 ? "rgba(255,205,140,0.4)" : "rgba(190,220,235,0.28)";
+          context.fillRect(wx, wy, 2.2, 2.6);
+        }
+      }
+    }
+    x += width + 3 + random() * 7;
+  }
+  const haze = context.createLinearGradient(0, horizon - 42, 0, horizon + 18);
+  haze.addColorStop(0, "rgba(238,190,146,0)");
+  haze.addColorStop(0.7, "rgba(238,190,146,0.42)");
+  haze.addColorStop(1, "rgba(238,190,146,0)");
+  context.fillStyle = haze;
+  context.fillRect(0, horizon - 42, canvas.width, 60);
+
+  context.fillStyle = "rgba(255,236,214,0.08)";
+  for (let index = 0; index < 7; index += 1) {
+    const y = 90 + index * 22 + Math.sin(index) * 8;
+    context.beginPath();
+    context.ellipse(120 + index * 130, y, 96 + index * 8, 5 + (index % 3) * 1.6, 0, 0, Math.PI * 2);
+    context.fill();
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.mapping = THREE.EquirectangularReflectionMapping;

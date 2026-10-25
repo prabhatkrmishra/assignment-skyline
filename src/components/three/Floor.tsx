@@ -1,14 +1,14 @@
 /**
- * @fileoverview Floor builder: slab, core, four facades, balcony.
+ * @fileoverview Floor builder: profiled slab, core, glazing, and party walls.
  *
  * @project Skyline Luxury Residences
  * @type {FrontendEngineeringTask}
  * @framework Next.js (App Router) + TypeScript + Three.js
  *
  * @description
- * Creates one independently-addressable floor group with a slab, lift/stair
- * core, four facade groups (Front/Back/Left/Right), and a balcony with glass
- * railing. Hero floor (12) additionally receives the apartment interior.
+ * Creates one independently-addressable floor group with a profiled slab, a
+ * lift/stair core, four facade anchors, and merged glazing/frames. The hero
+ * floor keeps its front facade separate for the interior reveal.
  *
  * @scope
  * - Procedural tower geometry and materials.
@@ -18,16 +18,24 @@
  * @module three/Floor
  */
 import * as THREE from "three";
-import { createFacade, collectMaterials } from "@/components/three/Facade";
+import { collectMaterials, createFacadeSpec, offsetFacadeParts, type FacadeSide } from "@/components/three/Facade";
 import { addHeroFloorInterior, type RoomLabelSeed } from "@/components/three/HeroFloorInterior";
 import { GeometryFactory } from "@/components/three/GeometryFactory";
+import {
+  createFacadeGlassMaterial,
+  createMetalMaterial,
+  createStoneMaterial,
+} from "@/components/three/Materials";
+import { createWindowGlowTexture, type SurfaceLibrary } from "@/components/three/Surfaces";
 import { FLOOR_DEPTH, FLOOR_WIDTH, HERO_FLOOR_NUMBER } from "@/lib/scroll/timeline";
 
-/** Creates a standard floor material with authored base opacity of 1. */
-function makeFloorMaterial(color: string, roughness: number, metalness = 0): THREE.MeshStandardMaterial {
-  const material = new THREE.MeshStandardMaterial({ color, roughness, metalness, transparent: true, depthWrite: true });
-  material.userData.skylineBaseOpacity = 1;
-  return material;
+const FACADE_SIDES: readonly FacadeSide[] = ["Front", "Back", "Left", "Right"];
+
+/** Slight two-step setback at the top of the tower, leaving Floor_12 untouched. */
+export function floorSetback(floorNumber: number): number {
+  if (floorNumber >= 23) return 0.92;
+  if (floorNumber >= 19) return 0.965;
+  return 1;
 }
 
 /** Result of building one floor. */
@@ -39,19 +47,40 @@ export interface BuiltFloor {
   roomLabels: RoomLabelSeed[];
 }
 
-/** Build one independently-addressable floor with its own four facade groups. */
-export function createFloor(floorNumber: number, geometry: GeometryFactory): BuiltFloor {
+/** Build one independently-addressable floor with its own four facade anchors. */
+export function createFloor(
+  floorNumber: number,
+  geometry: GeometryFactory,
+  surfaces: SurfaceLibrary | null,
+): BuiltFloor {
   const group = new THREE.Group();
   group.name = `Floor_${String(floorNumber).padStart(2, "0")}`;
   group.userData.floorNumber = floorNumber;
   group.userData.isHeroFloor = floorNumber === HERO_FLOOR_NUMBER;
+  group.scale.set(floorSetback(floorNumber), 1, floorSetback(floorNumber));
+
+  const glow = createWindowGlowTexture(1301 + floorNumber * 7919);
+  const glassTint = new THREE.Color("#6c99a3").offsetHSL(0, 0, ((floorNumber % 4) - 1.5) * 0.012);
+  const glass = createFacadeGlassMaterial(surfaces, glow, { opacity: 0.64, tint: glassTint });
+  const frame = createMetalMaterial(surfaces, "#bfa98a", 0.3, 0.82);
+  frame.emissive.set("#3d2d18");
+  frame.emissiveIntensity = 0.1;
+  frame.transparent = true;
+  const stone = createStoneMaterial(surfaces, "#ffffff", { vertexColors: true, roughness: 0.8 });
+  const slabMaterial = createStoneMaterial(surfaces, "#d3c6b0", { vertexColors: true, roughness: 0.74 });
 
   const slab = new THREE.Mesh(
-    geometry.box("floor-slab-14x10", FLOOR_WIDTH, 0.22, FLOOR_DEPTH),
-    makeFloorMaterial("#c9bea9", 0.72, 0.04),
+    geometry.coloredBoxes("floor-slab-profile", [
+      { width: FLOOR_WIDTH, height: 0.22, depth: FLOOR_DEPTH, y: 0.03, color: "#d7cab3" },
+      { width: FLOOR_WIDTH + 0.2, height: 0.14, depth: 0.17, z: FLOOR_DEPTH / 2 + 0.06, y: -0.02, color: "#bba98c" },
+      { width: FLOOR_WIDTH + 0.2, height: 0.14, depth: 0.17, z: -FLOOR_DEPTH / 2 - 0.06, y: -0.02, color: "#b5a487" },
+      { width: 0.17, height: 0.14, depth: FLOOR_DEPTH + 0.04, x: -FLOOR_WIDTH / 2 - 0.06, y: -0.02, color: "#c0ae91" },
+      { width: 0.17, height: 0.14, depth: FLOOR_DEPTH + 0.04, x: FLOOR_WIDTH / 2 + 0.06, y: -0.02, color: "#c0ae91" },
+      { width: FLOOR_WIDTH - 1.4, height: 0.06, depth: FLOOR_DEPTH - 1.2, y: -0.09, color: "#6f6555" },
+    ]),
+    slabMaterial,
   );
   slab.name = "Slab";
-  slab.position.y = 0.03;
   slab.castShadow = floorNumber % 3 === 0;
   slab.receiveShadow = true;
   group.add(slab);
@@ -59,112 +88,80 @@ export function createFloor(floorNumber: number, geometry: GeometryFactory): Bui
   const core = new THREE.Group();
   core.name = "Core";
   core.position.set(-4.75, 0, 0.05);
-  const shaft = new THREE.Mesh(
-    geometry.box("lift-stair-core", 2.05, 3.02, 2.25),
-    makeFloorMaterial("#b7aa94", 0.82),
-  );
-  shaft.name = "Core_Shaft";
-  shaft.position.y = 1.55;
-  shaft.castShadow = true;
-  shaft.receiveShadow = true;
-  core.add(shaft);
-  const elevatorDoor = new THREE.Mesh(
-    geometry.box("elevator-door", 0.82, 2.2, 0.055),
-    makeFloorMaterial("#766c5b", 0.52, 0.28),
-  );
-  elevatorDoor.name = "Core_ElevatorDoor";
-  elevatorDoor.position.set(0.25, 1.32, 1.16);
-  core.add(elevatorDoor);
-  const stairTreads = Array.from({ length: 7 }, (_, index) => ({
-    width: 0.95,
-    height: 0.075,
-    depth: 0.3,
-    x: -0.45 + (index % 2) * 0.18,
-    y: 0.42 + index * 0.25,
-    z: -0.72 + index * 0.22,
-  }));
-  const stair = new THREE.Mesh(geometry.boxes("core-stair-treads", stairTreads), makeFloorMaterial("#ded2bd", 0.86));
-  stair.name = "Core_StairFlight";
-  stair.position.y = 0;
-  core.add(stair);
-  group.add(core);
-
-  const facadeBuilds = ["Front", "Back", "Left", "Right"] as const;
-  let frontFacade: THREE.Group | null = null;
-  for (const side of facadeBuilds) {
-    const facade = createFacade(side, floorNumber, geometry, FLOOR_WIDTH, FLOOR_DEPTH);
-    group.add(facade.group);
-    if (side === "Front") frontFacade = facade.group;
-  }
-
-  const balcony = new THREE.Group();
-  balcony.name = "Balcony";
-  balcony.position.set(0, 0, FLOOR_DEPTH / 2 + 0.52);
-  const deck = new THREE.Mesh(
-    geometry.box("balcony-deck", 10.8, 0.16, 1.25),
-    makeFloorMaterial("#d2c4aa", 0.7, 0.08),
-  );
-  deck.name = "Balcony_Deck";
-  deck.position.y = 0.13;
-  deck.castShadow = true;
-  deck.receiveShadow = true;
-  balcony.add(deck);
-  const glassRail = new THREE.Mesh(
-    geometry.box("balcony-rail-glass", 10.55, 0.72, 0.045),
-    new THREE.MeshStandardMaterial({
-      color: "#8fb5b8",
-      roughness: 0.14,
-      metalness: 0.24,
-      transparent: true,
-      opacity: 0.28,
-      depthWrite: false,
-      envMapIntensity: 0.9,
-    }),
-  );
-  glassRail.name = "Balcony_GlassRailing";
-  glassRail.material.userData.skylineBaseOpacity = 0.28;
-  glassRail.position.set(0, 0.62, 0.59);
-  balcony.add(glassRail);
-  const railFrame = new THREE.Mesh(
-    geometry.boxes("balcony-rail-frame", [
-      { width: 10.6, height: 0.055, depth: 0.08, y: 0.99, z: 0.59 },
-      ...Array.from({ length: 11 }, (_, index) => ({
-        width: 0.035,
-        height: 0.78,
-        depth: 0.08,
-        x: -5.25 + index * 1.05,
-        y: 0.62,
-        z: 0.59,
+  const coreShaft = new THREE.Mesh(
+    geometry.coloredBoxes("lift-stair-core", [
+      { width: 2.05, height: 3.02, depth: 2.25, y: 1.55, color: "#bcae96" },
+      { width: 0.82, height: 2.2, depth: 0.06, x: 0.25, y: 1.32, z: 1.15, color: "#56615b" },
+      { width: 0.12, height: 2.28, depth: 0.08, x: -0.28, y: 1.34, z: 1.15, color: "#8b7c66" },
+      { width: 2.1, height: 0.1, depth: 2.3, y: 0.1, color: "#9b8e78" },
+      ...Array.from({ length: 7 }, (_, index) => ({
+        width: 0.95,
+        height: 0.075,
+        depth: 0.3,
+        x: -0.45 + (index % 2) * 0.18,
+        y: 0.42 + index * 0.25,
+        z: -0.72 + index * 0.22,
+        color: "#ddd1bb",
       })),
     ]),
-    makeFloorMaterial("#d8c49a", 0.37, 0.58),
+    stone,
   );
-  railFrame.name = "Balcony_MetalFrame";
-  const planterLeft = new THREE.Mesh(
-    geometry.box("balcony-planter-left", 1.6, 0.32, 0.42),
-    makeFloorMaterial("#68795c", 0.92),
-  );
-  planterLeft.name = "Balcony_Planter_Left";
-  planterLeft.position.set(-3.6, 0.3, 0.78);
-  planterLeft.castShadow = true;
-  balcony.add(planterLeft);
-  const planterRight = new THREE.Mesh(
-    geometry.box("balcony-planter-right", 1.6, 0.32, 0.42),
-    makeFloorMaterial("#68795c", 0.92),
-  );
-  planterRight.name = "Balcony_Planter_Right";
-  planterRight.position.set(3.6, 0.3, 0.78);
-  planterRight.castShadow = true;
-  balcony.add(planterRight);
-  group.add(balcony);
+  coreShaft.name = "Core_Shaft";
+  coreShaft.castShadow = true;
+  coreShaft.receiveShadow = true;
+  core.add(coreShaft);
+  group.add(core);
+
+  const specs = FACADE_SIDES.map((side) => createFacadeSpec(side, floorNumber, FLOOR_WIDTH, FLOOR_DEPTH));
+  for (const spec of specs) group.add(spec.group);
+  const frontSpec = specs.find((spec) => spec.group.name === "Facade_Front");
+  if (!frontSpec) throw new Error(`Floor_${floorNumber} has no front facade`);
+
+  let frontFacadeMaterials: Set<THREE.Material>;
+  if (floorNumber === HERO_FLOOR_NUMBER) {
+    const frontGlass = createFacadeGlassMaterial(surfaces, glow, { opacity: 0.64, tint: glassTint });
+    const frontFrame = createMetalMaterial(surfaces, "#bfa98a", 0.3, 0.82);
+    frontFrame.emissive.set("#3d2d18");
+    frontFrame.emissiveIntensity = 0.1;
+    frontFrame.transparent = true;
+    const frontGlassMesh = new THREE.Mesh(geometry.boxes("hero-front-glass", frontSpec.glassParts), frontGlass);
+    frontGlassMesh.name = "GlassPanel";
+    const frontFrameMesh = new THREE.Mesh(geometry.boxes("hero-front-frame", frontSpec.frameParts), frontFrame);
+    frontFrameMesh.name = "FrameGrid";
+    frontSpec.group.add(frontGlassMesh, frontFrameMesh);
+    frontFacadeMaterials = collectMaterials(frontSpec.group);
+
+    const otherSpecs = specs.filter((spec) => spec !== frontSpec);
+    addMergedFacades(group, geometry, otherSpecs, glass, frame, "Side");
+  } else {
+    addMergedFacades(group, geometry, specs, glass, frame, "All");
+    frontFacadeMaterials = new Set();
+  }
 
   const roomLabels = floorNumber === HERO_FLOOR_NUMBER ? addHeroFloorInterior(group, geometry) : [];
-  if (!frontFacade) throw new Error(`Floor_${floorNumber} has no front facade`);
   return {
     group,
     slab,
-    frontFacade,
-    frontFacadeMaterials: collectMaterials(frontFacade),
+    frontFacade: frontSpec.group,
+    frontFacadeMaterials,
     roomLabels,
   };
+}
+
+function addMergedFacades(
+  floor: THREE.Group,
+  geometry: GeometryFactory,
+  specs: readonly ReturnType<typeof createFacadeSpec>[],
+  glass: THREE.Material,
+  frame: THREE.Material,
+  label: string,
+): void {
+  const glassParts = specs.flatMap((spec) => offsetFacadeParts(spec.glassParts, spec.group));
+  const frameParts = specs.flatMap((spec) => offsetFacadeParts(spec.frameParts, spec.group));
+  const glassMesh = new THREE.Mesh(geometry.boxes(`facade-glass-${label}`, glassParts), glass);
+  glassMesh.name = "Facade_Glazing";
+  glassMesh.receiveShadow = true;
+  const frameMesh = new THREE.Mesh(geometry.boxes(`facade-frames-${label}`, frameParts), frame);
+  frameMesh.name = "Facade_Frames";
+  floor.add(glassMesh, frameMesh);
 }

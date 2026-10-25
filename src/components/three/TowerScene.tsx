@@ -6,10 +6,10 @@
  * @framework Next.js (App Router) + TypeScript + Three.js
  *
  * @description
- * Builds the full Skyline scene: podium, 24 floors, rooftop, surroundings
- * (neighbouring blocks, park, house blocks, amenities), lights, and environment.
- * Each floor owns Slab, Core, four facades, balcony. Only Floor_12's front
- * facade is animated. Materials are tracked for per-floor opacity control.
+ * Builds the full Skyline scene: paved site, neighbouring blocks, instanced
+ * landscape, podium lobby, 24 floors with merged glazing, designed crown,
+ * pool, gym and sky garden. Static props are merged by material and repeated
+ * planting is instanced to keep draw calls low.
  *
  * @scope
  * - Procedural tower geometry and materials.
@@ -20,9 +20,19 @@
  * @module three/TowerScene
  */
 import * as THREE from "three";
-import { createFloor } from "@/components/three/Floor";
-import { GeometryFactory } from "@/components/three/GeometryFactory";
+import { createBalconyInstances, type BalconyInstances } from "@/components/three/Balcony";
+import { createFloor, floorSetback } from "@/components/three/Floor";
+import { GeometryFactory, type ColoredBoxPart } from "@/components/three/GeometryFactory";
+import { createLandscape } from "@/components/three/Landscape";
+import {
+  createFacadeGlassMaterial,
+  createMetalMaterial,
+  createPavingMaterial,
+  createStoneMaterial,
+  createWaterMaterial,
+} from "@/components/three/Materials";
 import { FOG_COLOR, addTowerLights, createProceduralEnvironment, createSkyBackground } from "@/components/three/Lights";
+import { createSurfaceLibrary, type SurfaceLibrary } from "@/components/three/Surfaces";
 import { FLOOR_COUNT, FLOOR_HEIGHT, HERO_FLOOR_NUMBER, PODIUM_TOP, initialFloorOffset } from "@/lib/scroll/timeline";
 import type { RoomLabelSeed } from "@/components/three/HeroFloorInterior";
 
@@ -60,217 +70,501 @@ export interface TowerSceneBundle {
   tower: THREE.Group;
   floors: FloorRecord[];
   rooftop: RooftopRecord;
+  balconies: BalconyInstances;
   slabMeshes: THREE.Mesh[];
   roomLabels: WorldLabel[];
   environment: THREE.Texture;
   geometry: GeometryFactory;
+  treeCount: number;
+  updateAmbient(seconds: number): void;
 }
 
-function material(color: string, roughness = 0.8, metalness = 0): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color, roughness, metalness });
+interface SiteMaterials {
+  stone: THREE.MeshStandardMaterial;
+  stonePlain: THREE.MeshStandardMaterial;
+  paving: THREE.MeshStandardMaterial;
+  metal: THREE.MeshStandardMaterial;
+  metalPlain: THREE.MeshStandardMaterial;
+  darkMetal: THREE.MeshStandardMaterial;
+  furniture: THREE.MeshStandardMaterial;
+  ground: THREE.MeshStandardMaterial;
+  lawn: THREE.MeshStandardMaterial;
+  glass: THREE.MeshPhysicalMaterial;
+  windowGlass: THREE.MeshStandardMaterial;
+  litWindow: THREE.MeshBasicMaterial;
+  warmLight: THREE.MeshBasicMaterial;
+  water: THREE.MeshPhysicalMaterial;
 }
 
-function addBox(
+function createSiteMaterials(surfaces: SurfaceLibrary | null): SiteMaterials {
+  const ground = new THREE.MeshStandardMaterial({ color: "#77846b", roughness: 0.97, metalness: 0 });
+  const lawn = new THREE.MeshStandardMaterial({ color: "#687d5b", roughness: 0.96, metalness: 0 });
+  if (surfaces) {
+    ground.normalMap = surfaces.stone.normalMap;
+    ground.roughnessMap = surfaces.stone.roughnessMap;
+    ground.normalScale.set(0.35, 0.35);
+    lawn.normalMap = surfaces.stone.normalMap;
+    lawn.roughnessMap = surfaces.stone.roughnessMap;
+    lawn.normalScale.set(0.5, 0.5);
+  }
+  return {
+    stone: createStoneMaterial(surfaces, "#ffffff", { vertexColors: true }),
+    stonePlain: createStoneMaterial(surfaces, "#d0c3ac"),
+    paving: createPavingMaterial(surfaces, "#ffffff", true),
+    metal: createMetalMaterial(surfaces, "#ffffff", 0.28, 0.85, true),
+    metalPlain: createMetalMaterial(surfaces, "#c9a878", 0.3, 0.85),
+    darkMetal: createMetalMaterial(surfaces, "#3e4a46", 0.42, 0.62, true),
+    furniture: createStoneMaterial(surfaces, "#ffffff", { vertexColors: true, roughness: 0.65 }),
+    ground,
+    lawn,
+    glass: createFacadeGlassMaterial(surfaces, null, { opacity: 0.42, tint: "#729aa0", roughness: 0.12 }),
+    windowGlass: new THREE.MeshStandardMaterial({ color: "#7b9297", roughness: 0.17, metalness: 0.5 }),
+    litWindow: new THREE.MeshBasicMaterial({ vertexColors: true }),
+    warmLight: new THREE.MeshBasicMaterial({ color: "#ffd49a", toneMapped: false }),
+    water: createWaterMaterial(surfaces),
+  };
+}
+
+function addColoredBoxes(
   parent: THREE.Object3D,
   geometry: GeometryFactory,
   name: string,
-  size: readonly [number, number, number],
-  position: readonly [number, number, number],
+  parts: readonly ColoredBoxPart[],
   mat: THREE.Material,
   options: { castShadow?: boolean; receiveShadow?: boolean } = {},
 ): THREE.Mesh {
-  const mesh = new THREE.Mesh(geometry.box(name, ...size), mat);
+  const mesh = new THREE.Mesh(geometry.coloredBoxes(name, parts), mat);
   mesh.name = name;
-  mesh.position.set(...position);
   mesh.castShadow = options.castShadow ?? false;
   mesh.receiveShadow = options.receiveShadow ?? true;
   parent.add(mesh);
   return mesh;
 }
 
-function addTree(
-  parent: THREE.Object3D,
+function createPodium(
   geometry: GeometryFactory,
-  x: number,
-  z: number,
-  scale: number,
-  index: number,
-  trunkMaterial: THREE.Material,
-  canopyMaterials: readonly THREE.Material[],
+  tower: THREE.Group,
+  shadowed: boolean,
+  materials: SiteMaterials,
 ): void {
-const tree = new THREE.Group();
-  tree.name = `Landscape_Tree_${String(index).padStart(2, "0")}`;
-  tree.position.set(x, 0, z);
-  tree.scale.setScalar(scale);
-  const trunk = new THREE.Mesh(geometry.cylinder("landscape-tree-trunk", 0.3, 0.42, 2.8, 10), trunkMaterial);
-  trunk.name = "Tree_Trunk";
-  trunk.position.y = 1.4;
-  trunk.castShadow = true;
-  tree.add(trunk);
-  // Root flare.
-  const roots = new THREE.Mesh(geometry.cylinder("landscape-tree-roots", 0.55, 0.3, 0.35, 8), trunkMaterial);
-  roots.name = "Tree_Roots";
-  roots.position.y = 0.17;
-  roots.castShadow = true;
-  tree.add(roots);
-  // Branches.
-  for (let b = 0; b < 5; b += 1) {
-    const branch = new THREE.Mesh(geometry.cylinder(`landscape-tree-branch-${b}`, 0.07, 0.12, 1.1, 6), trunkMaterial);
-    branch.name = `Tree_Branch_${b}`;
-    branch.position.set(Math.cos((b / 5) * Math.PI * 2) * 0.26, 2.0 + b * 0.12, Math.sin((b / 5) * Math.PI * 2) * 0.26);
-    branch.rotation.z = Math.cos((b / 5) * Math.PI * 2) * 0.5;
-    branch.rotation.x = Math.sin((b / 5) * Math.PI * 2) * 0.5;
-    branch.castShadow = true;
-    tree.add(branch);
-  }
-  const crown = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown", 1.0, 2), canopyMaterials[index % canopyMaterials.length]);
-  crown.name = "Tree_Canopy";
-  crown.position.y = 2.6;
-  crown.scale.set(1.5, 1.7, 1.4);
-  crown.castShadow = true;
-  crown.receiveShadow = true;
-  tree.add(crown);
-  const crownMid = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown-mid", 0.9, 1), canopyMaterials[(index + 2) % canopyMaterials.length]);
-  crownMid.name = "Tree_Canopy_Mid";
-  crownMid.position.y = 2.0;
-  crownMid.scale.set(1.2, 1.0, 1.15);
-  crownMid.castShadow = true;
-  crownMid.receiveShadow = true;
-  tree.add(crownMid);
-  const crownTop = new THREE.Mesh(geometry.icosahedron("landscape-tree-crown-top", 0.72, 1), canopyMaterials[(index + 1) % canopyMaterials.length]);
-  crownTop.name = "Tree_Canopy_Top";
-  crownTop.position.y = 3.6;
-  crownTop.scale.set(1.15, 1.25, 1.1);
-  crownTop.castShadow = true;
-  crownTop.receiveShadow = true;
-  tree.add(crownTop);
-  parent.add(tree);
-}
-
-function addBush(
-  parent: THREE.Object3D,
-  geometry: GeometryFactory,
-  x: number,
-  z: number,
-  scale: number,
-  index: number,
-  materials: readonly THREE.Material[],
-): void {
-  const bush = new THREE.Group();
-  bush.name = `Landscape_Bush_${String(index).padStart(2, "0")}`;
-  bush.position.set(x, 0, z);
-  bush.scale.setScalar(scale);
-  const mound = new THREE.Mesh(geometry.icosahedron("landscape-bush-mound", 0.75, 1), materials[index % materials.length]);
-  mound.name = "Bush_Mound";
-  mound.position.y = 0.55;
-  mound.scale.set(1.6, 0.9, 1.5);
-  mound.castShadow = true;
-  mound.receiveShadow = true;
-  bush.add(mound);
-  const moundTop = new THREE.Mesh(geometry.icosahedron("landscape-bush-top", 0.45, 0), materials[(index + 1) % materials.length]);
-  moundTop.name = "Bush_Top";
-  moundTop.position.y = 1.05;
-  moundTop.scale.set(1.3, 0.95, 1.25);
-  moundTop.castShadow = true;
-  bush.add(moundTop);
-  parent.add(bush);
-}
-
-function createPodium(geometry: GeometryFactory, tower: THREE.Group, shadowed: boolean): void {
   const podium = new THREE.Group();
   podium.name = "Podium";
-  addBox(podium, geometry, "Podium_PlantedPlinth", [18.8, 2.4, 14.4], [0, 1.2, 0], material("#c8b99f", 0.83), { castShadow: shadowed });
-  addBox(podium, geometry, "Lobby_GlassFront", [14.8, 1.48, 0.08], [0, 1.12, 7.18], new THREE.MeshStandardMaterial({ color: "#7b9aa2", roughness: 0.23, metalness: 0.22, transparent: true, opacity: 0.62, depthWrite: false, envMapIntensity: 0.75 }));
-  addBox(podium, geometry, "Lobby_Canopy", [17.2, 0.24, 2.0], [0, 2.45, 7.1], material("#ddc79f", 0.4, 0.45), { castShadow: shadowed });
-  addBox(podium, geometry, "Lobby_EntranceRecess", [4.4, 1.75, 0.13], [0, 1.05, 7.24], material("#4d5d58", 0.7));
-  for (const x of [-7.8, -5.5, 5.5, 7.8]) {
-    addBox(podium, geometry, `Lobby_Column_${x}`, [0.22, 2.2, 0.26], [x, 1.2, 6.95], material("#e0d2b8", 0.7));
-  }
-  addBox(podium, geometry, "Podium_LandscapeBed_Front", [16.4, 0.28, 1.0], [0, 2.53, 8.0], material("#68795c", 0.95));
+
+  addColoredBoxes(podium, geometry, "Podium_Plinth", [
+    { width: 18.8, height: 2.4, depth: 14.4, y: 1.2, color: "#d2c4ab" },
+    { width: 14.6, height: 2.3, depth: 0.28, y: 1.18, z: 6.55, color: "#5a625b" },
+    { width: 0.3, height: 2.3, depth: 2.2, x: -7.2, y: 1.18, z: 6.2, color: "#b8a78c" },
+    { width: 0.3, height: 2.3, depth: 2.2, x: 7.2, y: 1.18, z: 6.2, color: "#b8a78c" },
+    { width: 14.9, height: 0.3, depth: 1.8, y: 2.4, z: 7.0, color: "#c6b596" },
+    { width: 4.8, height: 0.48, depth: 1.0, x: -5.7, y: 2.58, z: 7.35, color: "#b6a78c" },
+    { width: 4.8, height: 0.48, depth: 1.0, x: 5.7, y: 2.58, z: 7.35, color: "#b6a78c" },
+    { width: 4.5, height: 0.2, depth: 0.8, x: -5.7, y: 2.84, z: 7.35, color: "#536a4b" },
+    { width: 4.5, height: 0.2, depth: 0.8, x: 5.7, y: 2.84, z: 7.35, color: "#536a4b" },
+    { width: 1.6, height: 0.85, depth: 0.16, x: -8.55, y: 0.85, z: 7.28, color: "#6e604d" },
+  ], materials.stone, { castShadow: shadowed });
+
+  const glassParts = [
+    { width: 14.6, height: 2.18, depth: 0.07, y: 1.25, z: 7.2 },
+    { width: 0.07, height: 2.0, depth: 1.9, x: -7.18, y: 1.2, z: 6.25 },
+    { width: 0.07, height: 2.0, depth: 1.9, x: 7.18, y: 1.2, z: 6.25 },
+  ];
+  const lobbyGlass = new THREE.Mesh(geometry.boxes("lobby-glass", glassParts), materials.glass);
+  lobbyGlass.name = "Lobby_GlassFront";
+  podium.add(lobbyGlass);
+
+  addColoredBoxes(podium, geometry, "Lobby_Canopy", [
+    { width: 17.4, height: 0.22, depth: 2.6, y: 2.62, z: 7.5, color: "#d9c197" },
+    { width: 17.0, height: 0.08, depth: 2.2, y: 2.5, z: 7.45, color: "#8b744f" },
+    { width: 0.28, height: 2.66, depth: 0.28, x: -8.3, y: 1.33, z: 8.55, color: "#b59b71" },
+    { width: 0.28, height: 2.66, depth: 0.28, x: 8.3, y: 1.33, z: 8.55, color: "#b59b71" },
+    ...Array.from({ length: 7 }, (_, index) => ({
+      width: 0.09,
+      height: 2.3,
+      depth: 0.12,
+      x: -6.6 + index * 2.2,
+      y: 1.25,
+      z: 7.26,
+      color: "#c8ae83",
+    })),
+  ], materials.metal, { castShadow: shadowed });
+
+  const soffitLights = Array.from({ length: 6 }, (_, index) => ({
+    width: 0.5,
+    height: 0.04,
+    depth: 0.12,
+    x: -6.8 + index * 2.72,
+    y: 2.47,
+    z: 7.45,
+  }));
+  const lightMesh = new THREE.Mesh(geometry.boxes("lobby-soffit-lights", soffitLights), materials.warmLight);
+  lightMesh.name = "Lobby_SoffitLights";
+  podium.add(lightMesh);
+
+  const entrance = new THREE.Mesh(
+    geometry.box("lobby-entrance-doors", 4.4, 2.05, 0.09),
+    materials.windowGlass,
+  );
+  entrance.name = "Lobby_EntranceRecess";
+  entrance.position.set(0, 1.12, 7.28);
+  podium.add(entrance);
+
   tower.add(podium);
 }
 
-function createRooftop(geometry: GeometryFactory, tower: THREE.Group, roofY: number): THREE.Group {
+function createRooftop(
+  geometry: GeometryFactory,
+  tower: THREE.Group,
+  roofY: number,
+  shadowed: boolean,
+  materials: SiteMaterials,
+): THREE.Group {
   const rooftop = new THREE.Group();
   rooftop.name = "Rooftop";
   rooftop.position.y = roofY;
-  addBox(rooftop, geometry, "Rooftop_Deck", [14.4, 0.25, 10.4], [0, 0, 0], material("#d1c4ad", 0.76), { castShadow: true });
-  const parapet = material("#b9aa91", 0.75);
-  addBox(rooftop, geometry, "Rooftop_Parapet_Front", [14.2, 0.72, 0.18], [0, 0.42, 5.03], parapet);
-  addBox(rooftop, geometry, "Rooftop_Parapet_Back", [14.2, 0.72, 0.18], [0, 0.42, -5.03], parapet);
-  addBox(rooftop, geometry, "Rooftop_Parapet_Left", [0.18, 0.72, 10.1], [-7.03, 0.42, 0], parapet);
-  addBox(rooftop, geometry, "Rooftop_Parapet_Right", [0.18, 0.72, 10.1], [7.03, 0.42, 0], parapet);
+  rooftop.scale.set(floorSetback(FLOOR_COUNT), 1, floorSetback(FLOOR_COUNT));
 
-  const helipad = new THREE.Mesh(
-    geometry.cylinder("rooftop-helipad-disc", 1.55, 1.55, 0.06, 32),
-    material("#7a867c", 0.65),
+  addColoredBoxes(rooftop, geometry, "Rooftop_Deck", [
+    { width: 13.8, height: 0.25, depth: 9.9, color: "#d2c5ae" },
+    { width: 13.6, height: 0.72, depth: 0.2, z: 4.86, y: 0.42, color: "#b9a98d" },
+    { width: 13.6, height: 0.72, depth: 0.2, z: -4.86, y: 0.42, color: "#b9a98d" },
+    { width: 0.2, height: 0.72, depth: 9.5, x: -6.7, y: 0.42, color: "#c1b194" },
+    { width: 0.2, height: 0.72, depth: 9.5, x: 6.7, y: 0.42, color: "#c1b194" },
+    { width: 10.8, height: 0.82, depth: 7.5, y: 0.72, color: "#cbbc9f" },
+    { width: 8.4, height: 0.72, depth: 5.6, y: 1.42, color: "#c4b494" },
+    { width: 5.8, height: 0.26, depth: 3.4, y: 1.95, color: "#b6a585" },
+    { width: 4.4, height: 0.55, depth: 1.1, x: -4.1, y: 0.95, z: 2.1, color: "#b0a083" },
+    { width: 4.0, height: 0.18, depth: 0.9, x: -4.1, y: 1.24, z: 2.1, color: "#536b4c" },
+    { width: 2.8, height: 0.5, depth: 0.9, x: 4.2, y: 0.98, z: -2.3, color: "#b0a083" },
+    { width: 2.5, height: 0.16, depth: 0.7, x: 4.2, y: 1.26, z: -2.3, color: "#536b4c" },
+    { width: 4.6, height: 0.3, depth: 0.85, x: -3.0, y: 0.95, z: -2.9, color: "#c8b491" },
+  ], materials.stone, { castShadow: shadowed });
+
+  addColoredBoxes(rooftop, geometry, "Rooftop_Crown_Fins", [
+    ...Array.from({ length: 9 }, (_, index) => ({
+      width: 0.1,
+      height: 1.55,
+      depth: 0.34,
+      x: -3.2 + index * 0.8,
+      y: 2.72,
+      z: 1.78,
+      color: "#d1b483",
+    })),
+    ...Array.from({ length: 9 }, (_, index) => ({
+      width: 0.1,
+      height: 1.55,
+      depth: 0.34,
+      x: -3.2 + index * 0.8,
+      y: 2.72,
+      z: -1.78,
+      color: "#d1b483",
+    })),
+    { width: 6.9, height: 0.09, depth: 0.16, y: 3.58, z: 1.78, color: "#e0c58f" },
+    { width: 6.9, height: 0.09, depth: 0.16, y: 3.58, z: -1.78, color: "#e0c58f" },
+    { width: 5.0, height: 0.22, depth: 3.8, y: 3.62, color: "#b9a681" },
+    { width: 0.18, height: 0.6, depth: 0.18, x: 2.4, y: 3.95, z: 1.2, color: "#d1b483" },
+    { width: 0.18, height: 1.1, depth: 0.18, x: -2.4, y: 4.2, z: -1.0, color: "#d1b483" },
+  ], materials.metal, { castShadow: shadowed });
+
+  const lantern = new THREE.Mesh(
+    geometry.box("rooftop-crown-lantern", 6.2, 1.35, 3.7),
+    materials.glass,
   );
-  helipad.name = "Rooftop_Helipad_Disc";
-  helipad.position.set(3.65, 0.18, -1.65);
-  rooftop.add(helipad);
-  const helipadRing = new THREE.Mesh(
-    geometry.torus("rooftop-helipad-ring", 1.2, 0.035, 6, 32),
-    material("#e8d6b6", 0.36, 0.25),
+  lantern.name = "Rooftop_Crown_Lantern";
+  lantern.position.y = 2.72;
+  rooftop.add(lantern);
+
+  const crownLight = new THREE.Mesh(
+    geometry.box("rooftop-crown-lightband", 6.4, 0.08, 3.9),
+    materials.warmLight,
   );
-  helipadRing.name = "Rooftop_Helipad_Ring";
-  helipadRing.rotation.x = Math.PI / 2;
-  helipadRing.position.set(3.65, 0.22, -1.65);
-  rooftop.add(helipadRing);
-  addBox(rooftop, geometry, "Rooftop_Helipad_HBar", [0.72, 0.035, 0.1], [3.65, 0.23, -1.65], material("#efe4d2", 0.4));
-  addBox(rooftop, geometry, "Rooftop_Helipad_HStem", [0.1, 0.035, 0.72], [3.65, 0.23, -1.65], material("#efe4d2", 0.4));
+  crownLight.name = "Rooftop_Crown_LightBand";
+  crownLight.position.y = 2.1;
+  rooftop.add(crownLight);
 
   const water = new THREE.Mesh(
-    geometry.box("rooftop-water-feature", 2.5, 0.07, 1.35),
-    new THREE.MeshStandardMaterial({ color: "#77aaa9", roughness: 0.19, metalness: 0.15, transparent: true, opacity: 0.88 }),
+    geometry.box("rooftop-water-feature", 4.6, 0.06, 1.25),
+    materials.water,
   );
   water.name = "Rooftop_WaterFeature";
-  water.position.set(-3.5, 0.19, 1.2);
+  water.position.set(-4.1, 0.36, 2.1);
   rooftop.add(water);
+
+  const firePit = new THREE.Mesh(
+    geometry.cylinder("rooftop-fire-pit", 0.72, 0.82, 0.36, 18),
+    materials.stonePlain,
+  );
+  firePit.name = "Rooftop_FirePit";
+  firePit.position.set(4.2, 0.55, -2.3);
+  rooftop.add(firePit);
+
   tower.add(rooftop);
   return rooftop;
 }
 
-function createAmenityCampus(scene: THREE.Scene, geometry: GeometryFactory, shadowed: boolean): void {
-  const poolArea = new THREE.Group();
-  poolArea.name = "Amenity_Pool";
-  poolArea.position.set(23, 0, 13);
-  addBox(poolArea, geometry, "Pool_Deck", [15.5, 0.28, 9.0], [0, 0.14, 0], material("#d4c4a8", 0.68), { castShadow: shadowed });
-  addBox(poolArea, geometry, "Pool_Water", [13.4, 0.06, 6.8], [0, 0.31, 0], new THREE.MeshStandardMaterial({ color: "#5ca8ad", roughness: 0.16, metalness: 0.12, transparent: true, opacity: 0.86, depthWrite: false }));
-  addBox(poolArea, geometry, "Pool_Steps", [2.0, 0.08, 0.9], [4.9, 0.36, 3.3], material("#eee1ca", 0.4));
-  scene.add(poolArea);
+function createPool(
+  scene: THREE.Scene,
+  geometry: GeometryFactory,
+  shadowed: boolean,
+  materials: SiteMaterials,
+): void {
+  const pool = new THREE.Group();
+  pool.name = "Amenity_Pool";
+  pool.position.set(23, 0, 13);
 
+  addColoredBoxes(pool, geometry, "Pool_Deck", [
+    { width: 15.5, height: 0.28, depth: 9.4, y: 0.14, color: "#d8cab0" },
+    { width: 14.2, height: 0.1, depth: 0.55, z: 3.7, y: 0.3, color: "#e1d5be" },
+    { width: 14.2, height: 0.1, depth: 0.55, z: -3.7, y: 0.3, color: "#e1d5be" },
+    { width: 0.55, height: 0.1, depth: 6.8, x: 6.6, y: 0.3, color: "#e1d5be" },
+    { width: 0.55, height: 0.1, depth: 6.8, x: -6.6, y: 0.3, color: "#e1d5be" },
+    { width: 2.2, height: 0.18, depth: 1.1, x: 4.9, y: 0.33, z: 3.4, color: "#e6dac3" },
+    { width: 2.2, height: 0.36, depth: 1.1, x: 4.9, y: 0.24, z: 2.3, color: "#d4c6ac" },
+  ], materials.paving, { castShadow: shadowed });
+
+  addColoredBoxes(pool, geometry, "Pool_Basin", [
+    { width: 13.7, height: 0.08, depth: 7.1, y: 0.02, color: "#3c6f74" },
+    { width: 13.7, height: 0.5, depth: 0.3, z: 3.5, y: 0.24, color: "#477b7f" },
+    { width: 13.7, height: 0.5, depth: 0.3, z: -3.5, y: 0.24, color: "#477b7f" },
+    { width: 0.3, height: 0.5, depth: 7.1, x: 6.7, y: 0.24, color: "#477b7f" },
+    { width: 0.3, height: 0.5, depth: 7.1, x: -6.7, y: 0.24, color: "#477b7f" },
+  ], materials.stone);
+
+  const water = new THREE.Mesh(geometry.box("pool-water", 13.4, 0.06, 6.9), materials.water);
+  water.name = "Pool_Water";
+  water.position.y = 0.31;
+  pool.add(water);
+
+  const loungeParts: ColoredBoxPart[] = [];
+  for (let index = 0; index < 6; index += 1) {
+    const row = index < 3 ? 1 : -1;
+    const x = -5.2 + (index % 3) * 3.2;
+    const z = row * 4.25;
+    loungeParts.push(
+      { width: 1.9, height: 0.16, depth: 0.72, x, y: 0.46, z, color: "#e3d5b9" },
+      { width: 0.72, height: 0.45, depth: 0.16, x: x - 0.55, y: 0.72, z: z + row * 0.34, color: "#e3d5b9" },
+      { width: 0.14, height: 0.28, depth: 0.6, x: x - 0.8, y: 0.28, z, color: "#8a6d4c" },
+      { width: 0.14, height: 0.28, depth: 0.6, x: x + 0.8, y: 0.28, z, color: "#8a6d4c" },
+    );
+  }
+  addColoredBoxes(pool, geometry, "Pool_Loungers", loungeParts, materials.furniture, { castShadow: shadowed });
+
+  const umbrellaParts = [];
+  for (let index = 0; index < 3; index += 1) {
+    const x = -6.2 + index * 6.2;
+    umbrellaParts.push(
+      { geometry: geometry.cylinder(`pool-umbrella-pole-${index}`, 0.045, 0.055, 2.4, 6), color: "#b29a72", matrix: new THREE.Matrix4().makeTranslation(x, 1.35, 4.4) },
+      { geometry: geometry.cylinder(`pool-umbrella-canopy-${index}`, 0.06, 1.55, 0.34, 10), color: "#eee0c6", matrix: new THREE.Matrix4().makeTranslation(x, 2.55, 4.4) },
+    );
+  }
+  const umbrellas = new THREE.Mesh(geometry.colored("pool-umbrellas", umbrellaParts), materials.furniture);
+  umbrellas.name = "Pool_Umbrellas";
+  umbrellas.castShadow = shadowed;
+  pool.add(umbrellas);
+
+  scene.add(pool);
+}
+
+function createGym(
+  scene: THREE.Scene,
+  geometry: GeometryFactory,
+  shadowed: boolean,
+  materials: SiteMaterials,
+): void {
   const gym = new THREE.Group();
   gym.name = "Amenity_Gym";
   gym.position.set(-23, 0, 2);
-  addBox(gym, geometry, "Gym_Building", [9.5, 4.5, 7.2], [0, 2.25, 0], material("#c5b49b", 0.72), { castShadow: shadowed });
-  addBox(gym, geometry, "Gym_Front_Glazing", [8.8, 3.05, 0.07], [0, 2.25, 3.64], new THREE.MeshStandardMaterial({ color: "#729aa3", roughness: 0.21, metalness: 0.2, transparent: true, opacity: 0.56, depthWrite: false, envMapIntensity: 0.8 }));
-  addBox(gym, geometry, "Gym_Entry", [1.7, 2.9, 0.1], [0, 1.65, 3.7], material("#53635d", 0.6));
-  addBox(gym, geometry, "Gym_Roof", [10.0, 0.3, 7.7], [0, 4.57, 0], material("#d8c7a8", 0.52, 0.15));
-  scene.add(gym);
 
+  addColoredBoxes(gym, geometry, "Gym_Building", [
+    { width: 9.5, height: 4.5, depth: 7.2, y: 2.25, color: "#cbbaa0" },
+    { width: 10.4, height: 0.3, depth: 8.1, y: 4.6, color: "#d8c6a7" },
+    { width: 9.2, height: 0.32, depth: 0.5, y: 0.3, z: 3.55, color: "#ad9a7e" },
+    { width: 1.8, height: 2.85, depth: 0.16, x: 0, y: 1.62, z: 3.68, color: "#4b514b" },
+  ], materials.stone, { castShadow: shadowed });
+
+  const glazing = new THREE.Mesh(
+    geometry.boxes("gym-glazing", [
+      { width: 9.0, height: 3.0, depth: 0.07, y: 2.3, z: 3.64 },
+      { width: 0.07, height: 2.5, depth: 5.4, x: 4.78, y: 2.15, z: 0 },
+    ]),
+    materials.glass,
+  );
+  glazing.name = "Gym_Front_Glazing";
+  gym.add(glazing);
+
+  addColoredBoxes(gym, geometry, "Gym_Canopy", [
+    { width: 4.2, height: 0.16, depth: 2.1, x: 0, y: 3.45, z: 4.55, color: "#d3b783" },
+    { width: 0.2, height: 3.4, depth: 0.2, x: -2.0, y: 1.7, z: 5.3, color: "#c2a878" },
+    { width: 0.2, height: 3.4, depth: 0.2, x: 2.0, y: 1.7, z: 5.3, color: "#c2a878" },
+    ...Array.from({ length: 7 }, (_, index) => ({
+      width: 0.07,
+      height: 3.1,
+      depth: 0.14,
+      x: -3.6 + index * 1.2,
+      y: 2.3,
+      z: 3.72,
+      color: "#cbae7c",
+    })),
+  ], materials.metal, { castShadow: shadowed });
+
+  addColoredBoxes(gym, geometry, "Gym_Equipment", [
+    { width: 1.7, height: 1.1, depth: 0.7, x: -2.9, y: 0.9, z: 1.5, color: "#3f4a47" },
+    { width: 1.7, height: 1.1, depth: 0.7, x: -0.5, y: 0.9, z: 1.5, color: "#3f4a47" },
+    { width: 1.5, height: 0.8, depth: 1.0, x: 2.3, y: 0.75, z: 1.2, color: "#4a5651" },
+    { width: 0.9, height: 1.9, depth: 0.7, x: 3.6, y: 1.1, z: 1.7, color: "#3f4a47" },
+    { width: 2.6, height: 0.14, depth: 0.5, x: 0.5, y: 1.5, z: 0.1, color: "#7c6649" },
+  ], materials.darkMetal, { castShadow: false });
+
+  scene.add(gym);
+}
+
+function createGarden(
+  scene: THREE.Scene,
+  geometry: GeometryFactory,
+  shadowed: boolean,
+  materials: SiteMaterials,
+): void {
   const garden = new THREE.Group();
   garden.name = "Amenity_Garden_SkyDeck";
   garden.position.set(16, 0, -21);
-  addBox(garden, geometry, "Garden_Deck", [13.5, 0.16, 12.0], [0, 0.08, 0], material("#67785b", 0.94));
-  addBox(garden, geometry, "Garden_Path", [2.15, 0.05, 10.6], [0, 0.18, 0], material("#c5b79d", 0.9));
-  const trunk = material("#5a4230", 0.9);
-  const foliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
-  for (let index = 0; index < 8; index += 1) {
-    const x = index % 2 === 0 ? -4.8 : 4.8;
-    const z = -4.6 + Math.floor(index / 2) * 2.8;
-    addTree(garden, geometry, x, z, 0.84 + (index % 3) * 0.08, index + 12, trunk, foliage);
-  }
+
+  const lawn = new THREE.Mesh(geometry.box("garden-lawn", 13.5, 0.16, 12.0), materials.lawn);
+  lawn.name = "Garden_Deck";
+  lawn.position.y = 0.08;
+  lawn.receiveShadow = true;
+  garden.add(lawn);
+
+  addColoredBoxes(garden, geometry, "Garden_Path", [
+    { width: 2.15, height: 0.05, depth: 10.6, y: 0.18, color: "#d0c3a8" },
+    { width: 9.8, height: 0.05, depth: 1.8, y: 0.18, z: 3.7, color: "#cbbda2" },
+  ], materials.paving);
+
+  addColoredBoxes(garden, geometry, "Garden_Pergola", [
+    ...[-4.4, 4.4].flatMap((x) => [-4.2, 4.2].map((z) => ({
+      width: 0.22,
+      height: 2.8,
+      depth: 0.22,
+      x,
+      y: 1.58,
+      z,
+      color: "#b89d70",
+    }))),
+    { width: 9.4, height: 0.16, depth: 0.2, y: 3.02, z: -4.2, color: "#c9ae7c" },
+    { width: 9.4, height: 0.16, depth: 0.2, y: 3.02, z: 4.2, color: "#c9ae7c" },
+    ...Array.from({ length: 7 }, (_, index) => ({
+      width: 0.12,
+      height: 0.12,
+      depth: 8.6,
+      x: -4.0 + index * 1.34,
+      y: 3.12,
+      color: "#d2b883",
+    })),
+  ], materials.metal, { castShadow: shadowed });
+
+  const stringLights = new THREE.Mesh(
+    geometry.boxes("garden-string-lights", Array.from({ length: 7 }, (_, index) => ({
+      width: 0.16,
+      height: 0.16,
+      depth: 0.16,
+      x: -4.0 + index * 1.34,
+      y: 2.92,
+      z: 4.2,
+    }))),
+    materials.warmLight,
+  );
+  stringLights.name = "Garden_StringLights";
+  garden.add(stringLights);
+
+  addColoredBoxes(garden, geometry, "Garden_Benches", [
+    ...[0, 1, 2].flatMap((index) => {
+      const x = -2.4 + index * 2.4;
+      return [
+        { width: 1.9, height: 0.12, depth: 0.5, x, y: 0.66, z: -2.4, color: "#9a7a53" },
+        { width: 1.9, height: 0.5, depth: 0.12, x, y: 0.94, z: -2.62, color: "#9a7a53" },
+        { width: 0.12, height: 0.5, depth: 0.5, x: x - 0.75, y: 0.4, z: -2.4, color: "#6c6d61" },
+        { width: 0.12, height: 0.5, depth: 0.5, x: x + 0.75, y: 0.4, z: -2.4, color: "#6c6d61" },
+      ];
+    }),
+  ], materials.furniture, { castShadow: shadowed });
+
+  addColoredBoxes(garden, geometry, "Garden_Planters", [
+    { width: 4.2, height: 0.5, depth: 0.9, x: -5.2, y: 0.38, z: 5.0, color: "#a8997e" },
+    { width: 4.2, height: 0.5, depth: 0.9, x: 5.2, y: 0.38, z: 5.0, color: "#a8997e" },
+    { width: 3.9, height: 0.18, depth: 0.74, x: -5.2, y: 0.66, z: 5.0, color: "#4f6649" },
+    { width: 3.9, height: 0.18, depth: 0.74, x: 5.2, y: 0.66, z: 5.0, color: "#4f6649" },
+  ], materials.stone, { castShadow: shadowed });
+
   scene.add(garden);
 }
 
-function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shadowed: boolean): void {
+function createSurroundings(
+  scene: THREE.Scene,
+  geometry: GeometryFactory,
+  shadowed: boolean,
+  materials: SiteMaterials,
+): void {
   const surroundings = new THREE.Group();
   surroundings.name = "Surroundings";
-  const ground = new THREE.Mesh(geometry.box("site-ground", 1800, 0.18, 1800), material("#8f9a7e", 0.96));
+
+  const ground = new THREE.Mesh(geometry.box("site-ground", 1800, 0.18, 1800), materials.ground);
   ground.name = "Ground_Plane";
   ground.position.y = -0.18;
   ground.receiveShadow = true;
   surroundings.add(ground);
+
+  addColoredBoxes(surroundings, geometry, "Plaza_Paving", [
+    { width: 30, height: 0.16, depth: 20, y: 0.02, z: 6, color: "#e0d4bd" },
+    { width: 2.6, height: 0.08, depth: 14.5, x: 13.4, y: 0.08, z: 11, color: "#d6c9af" },
+    { width: 12.5, height: 0.08, depth: 2.6, x: -14.5, y: 0.08, z: 2, color: "#d6c9af" },
+    { width: 2.6, height: 0.08, depth: 12.5, x: 14.5, y: 0.08, z: -12, color: "#d6c9af" },
+    { width: 12.4, height: 0.12, depth: 0.72, y: 0.11, z: 16.2, color: "#ded1b8" },
+    { width: 12.4, height: 0.08, depth: 0.72, y: 0.15, z: 16.9, color: "#ded1b8" },
+    { width: 2.4, height: 0.06, depth: 16, x: -12, y: 0.08, z: -30, color: "#d0c3a8" },
+    { width: 20, height: 0.06, depth: 2.0, x: -12, y: 0.08, z: -30, color: "#d0c3a8" },
+  ], materials.paving, { castShadow: false });
+
+  const park = new THREE.Mesh(geometry.box("park-ground", 26, 0.12, 18), materials.lawn);
+  park.name = "Park_Ground";
+  park.position.set(-12, 0.06, -30);
+  park.receiveShadow = true;
+  surroundings.add(park);
+
+  addColoredBoxes(surroundings, geometry, "Plaza_Furniture", [
+    ...[-1, 1].flatMap((side) => [4, 9].map((z) => [
+      { width: 2.4, height: 0.14, depth: 0.52, x: side * 9.2, y: 0.58, z, color: "#9b7b54" },
+      { width: 2.4, height: 0.5, depth: 0.13, x: side * 9.2, y: 0.86, z: z - 0.22, color: "#9b7b54" },
+      { width: 0.14, height: 0.44, depth: 0.5, x: side * 9.2 - 0.9, y: 0.36, z: z - 0.05, color: "#6c6d61" },
+      { width: 0.14, height: 0.44, depth: 0.5, x: side * 9.2 + 0.9, y: 0.36, z: z - 0.05, color: "#6c6d61" },
+    ])).flat(),
+    { width: 5.8, height: 0.46, depth: 1.0, x: -7.5, y: 0.34, z: 9.1, color: "#ad9e82" },
+    { width: 5.5, height: 0.16, depth: 0.76, x: -7.5, y: 0.63, z: 9.1, color: "#536b4c" },
+    { width: 5.8, height: 0.46, depth: 1.0, x: 7.5, y: 0.34, z: 9.1, color: "#ad9e82" },
+    { width: 5.5, height: 0.16, depth: 0.76, x: 7.5, y: 0.63, z: 9.1, color: "#536b4c" },
+  ], materials.furniture, { castShadow: shadowed });
+
+  addColoredBoxes(surroundings, geometry, "Plaza_Bollards", Array.from({ length: 12 }, (_, index) => {
+    const side = index < 6 ? -1 : 1;
+    const step = index % 6;
+    return {
+      width: 0.13,
+      height: 0.92,
+      depth: 0.13,
+      x: side * 11.5,
+      y: 0.54,
+      z: -1 + step * 3.2,
+      color: "#b49a6c",
+    };
+  }), materials.metal);
+
+  const bollardCaps = new THREE.Mesh(
+    geometry.boxes("plaza-bollard-caps", Array.from({ length: 12 }, (_, index) => {
+      const side = index < 6 ? -1 : 1;
+      const step = index % 6;
+      return { width: 0.17, height: 0.05, depth: 0.17, x: side * 11.5, y: 1.02, z: -1 + step * 3.2 };
+    })),
+    materials.warmLight,
+  );
+  bollardCaps.name = "Plaza_BollardLights";
+  surroundings.add(bollardCaps);
 
   const blockSpecs = [
     { x: -37, z: -22, w: 13, h: 15, d: 12, setback: 0.4 },
@@ -280,180 +574,100 @@ function createSurroundings(scene: THREE.Scene, geometry: GeometryFactory, shado
     { x: 5, z: -43, w: 18, h: 26, d: 11, setback: 0.55 },
     { x: -20, z: 43, w: 16, h: 19, d: 13, setback: 0.4 },
   ];
-  const blockMaterials = [material("#b7b2a4", 0.88), material("#c5b6a0", 0.86), material("#a7b5b5", 0.84), material("#c2b8a8", 0.85)];
+  const blockColors = ["#bdb7a8", "#c8b9a2", "#adbab8", "#c6bcaa"];
+  const blockParts: ColoredBoxPart[] = [];
+  const windowParts: ColoredBoxPart[] = [];
+  const litWindowParts: ColoredBoxPart[] = [];
+  let seed = 0x9e3779b9;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const addWindow = (width: number, height: number, depth: number, x: number, y: number, z: number) => {
+    if (random() < 0.22) {
+      const warm = random() > 0.3;
+      litWindowParts.push({
+        width,
+        height,
+        depth,
+        x,
+        y,
+        z,
+        color: warm ? (random() > 0.5 ? "#e3b878" : "#cf9f65") : "#a9c0cb",
+      });
+    } else {
+      windowParts.push({ width, height, depth, x, y, z, color: "#6f858a" });
+    }
+  };
+
   blockSpecs.forEach((spec, index) => {
-    // Stepped massing: base volume plus a smaller setback top.
     const baseHeight = spec.h * (1 - spec.setback);
     const topHeight = spec.h * spec.setback;
-    const block = addBox(
-      surroundings,
-      geometry,
-      `Neighbouring_Block_${String(index + 1).padStart(2, "0")}`,
-      [spec.w, baseHeight, spec.d],
-      [spec.x, baseHeight / 2 - 0.04, spec.z],
-      blockMaterials[index % blockMaterials.length],
-      { castShadow: shadowed },
+    blockParts.push(
+      { width: spec.w, height: baseHeight, depth: spec.d, x: spec.x, y: baseHeight / 2 - 0.04, z: spec.z, color: blockColors[index % blockColors.length] },
+      { width: spec.w * 0.72, height: topHeight, depth: spec.d * 0.72, x: spec.x, y: baseHeight + topHeight / 2 - 0.04, z: spec.z, color: blockColors[(index + 1) % blockColors.length] },
+      { width: spec.w * 0.35, height: 1.6, depth: spec.d * 0.35, x: spec.x + spec.w * 0.15, y: spec.h + 0.76, z: spec.z - spec.d * 0.1, color: "#a29a8b" },
     );
-    block.userData.architecturalContext = true;
-    if (topHeight > 1) {
-      const top = addBox(
-        surroundings,
-        geometry,
-        `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Top`,
-        [spec.w * 0.72, topHeight, spec.d * 0.72],
-        [spec.x, baseHeight + topHeight / 2 - 0.04, spec.z],
-        blockMaterials[(index + 1) % blockMaterials.length],
-        { castShadow: shadowed },
-      );
-      top.userData.architecturalContext = true;
 
-      // Windows on the setback top volume.
-      const topWindowParts: { width: number; height: number; depth: number; x: number; y: number; z: number }[] = [];
-      const topCols = Math.max(2, Math.floor((spec.w * 0.72) / 2.4));
-      const topRows = Math.max(2, Math.floor(topHeight / 2.8));
-      const topStartX = spec.x - ((topCols - 1) * 2.0) / 2;
-      const topStartY = baseHeight + 1.5;
-      for (let col = 0; col < topCols; col += 1) {
-        for (let row = 0; row < topRows; row += 1) {
-          topWindowParts.push({
-            width: 0.95,
-            height: 1.05,
-            depth: 0.06,
-            x: topStartX + col * 2.0,
-            y: topStartY + row * 2.4,
-            z: spec.z + (spec.d * 0.72) / 2 + 0.04,
-          });
-        }
-      }
-      if (topWindowParts.length > 0) {
-        const topWindowMesh = new THREE.Mesh(
-          geometry.boxes(`neighbour-top-windows-${index}`, topWindowParts),
-          new THREE.MeshStandardMaterial({ color: "#cfe4ea", roughness: 0.18, metalness: 0.2, transparent: true, opacity: 0.82, depthWrite: false, envMapIntensity: 0.9, emissive: "#9ec8d2", emissiveIntensity: 0.25 }),
-        );
-        topWindowMesh.name = `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Top_Windows`;
-        surroundings.add(topWindowMesh);
-      }
-    }
-
-    // Window grid on the facade facing the tower.
-    const windowParts: { width: number; height: number; depth: number; x: number; y: number; z: number }[] = [];
-    const windowCols = Math.max(3, Math.floor(spec.w / 2.4));
     const windowRows = Math.max(3, Math.floor(baseHeight / 2.8));
-    const startX = spec.x - ((windowCols - 1) * 2.0) / 2;
-    const startY = 1.5;
-    for (let col = 0; col < windowCols; col += 1) {
+    const cols = Math.max(3, Math.floor(spec.w / 2.4));
+    const startX = spec.x - ((cols - 1) * 2.0) / 2;
+    for (let col = 0; col < cols; col += 1) {
       for (let row = 0; row < windowRows; row += 1) {
-        windowParts.push({
-          width: 0.95,
-          height: 1.05,
-          depth: 0.06,
-          x: startX + col * 2.0,
-          y: startY + row * 2.4,
-          z: spec.z + spec.d / 2 + 0.04,
-        });
+        addWindow(0.95, 1.05, 0.06, startX + col * 2.0, 1.5 + row * 2.4, spec.z + spec.d / 2 + 0.04);
       }
     }
-    // Side facades (left/right) windows.
     const sideCols = Math.max(2, Math.floor(spec.d / 2.4));
-    const sideRows = windowRows;
-    const sideStartZ = spec.z - ((sideCols - 1) * 2.0) / 2;
     for (let side = 0; side < 2; side += 1) {
       const sideX = side === 0 ? spec.x - spec.w / 2 - 0.04 : spec.x + spec.w / 2 + 0.04;
       for (let col = 0; col < sideCols; col += 1) {
-        for (let row = 0; row < sideRows; row += 1) {
-          windowParts.push({
-            width: 0.06,
-            height: 1.05,
-            depth: 0.95,
-            x: sideX,
-            y: startY + row * 2.4,
-            z: sideStartZ + col * 2.0,
-          });
+        for (let row = 0; row < windowRows; row += 1) {
+          addWindow(0.06, 1.05, 0.95, sideX, 1.5 + row * 2.4, spec.z - ((sideCols - 1) * 2.0) / 2 + col * 2.0);
         }
       }
     }
-    if (windowParts.length > 0) {
-      const windowMesh = new THREE.Mesh(
-        geometry.boxes(`neighbour-windows-${index}`, windowParts),
-        new THREE.MeshStandardMaterial({ color: "#cfe4ea", roughness: 0.18, metalness: 0.2, transparent: true, opacity: 0.82, depthWrite: false, envMapIntensity: 0.9, emissive: "#9ec8d2", emissiveIntensity: 0.25 }),
-      );
-      windowMesh.name = `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Windows`;
-      surroundings.add(windowMesh);
+    const topCols = Math.max(2, Math.floor((spec.w * 0.72) / 2.4));
+    const topRows = Math.max(2, Math.floor(topHeight / 2.8));
+    for (let col = 0; col < topCols; col += 1) {
+      for (let row = 0; row < topRows; row += 1) {
+        addWindow(0.95, 1.05, 0.06, spec.x - ((topCols - 1) * 2.0) / 2 + col * 2.0, baseHeight + 1.5 + row * 2.4, spec.z + (spec.d * 0.72) / 2 + 0.04);
+      }
     }
-
-    // Rooftop mechanical penthouse.
-    addBox(
-      surroundings,
-      geometry,
-      `Neighbouring_Block_${String(index + 1).padStart(2, "0")}_Penthouse`,
-      [spec.w * 0.35, 1.6, spec.d * 0.35],
-      [spec.x + spec.w * 0.15, spec.h + 0.8, spec.z - spec.d * 0.1],
-      material("#9a9386", 0.7),
-      { castShadow: shadowed },
-    );
   });
 
-  const trunk = material("#5a4230", 0.9);
-  const foliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
-  const treePositions: readonly [number, number, number][] = [
-    [-13, 0.84, 8], [-13.5, 0.75, -4], [13.2, 0.9, 7], [13.5, 0.72, -5],
-    [-20, 0.85, 12], [20, 0.78, -9], [-19, 0.78, -14], [9, 0.72, 17],
-  ];
-  treePositions.forEach(([x, scale, z], index) => addTree(surroundings, geometry, x, z, scale, index, trunk, foliage));
-  scene.add(surroundings);
-
-  // Residential park and low-rise house blocks for a more believable neighbourhood.
-  const park = new THREE.Group();
-  park.name = "Neighbourhood_Park";
-  park.position.set(-12, 0, -30);
-  addBox(park, geometry, "Park_Ground", [26, 0.12, 18], [0, 0.06, 0], material("#6f8a62", 0.95));
-  addBox(park, geometry, "Park_Path_Main", [2.4, 0.05, 16], [0, 0.14, 0], material("#c9bfa6", 0.9));
-  addBox(park, geometry, "Park_Path_Cross", [20, 0.05, 2.0], [0, 0.14, 0], material("#c9bfa6", 0.9));
-  const parkTrunk = material("#5a4230", 0.9);
-  const parkFoliage = [material("#4a6b4a", 0.93), material("#5e7d58", 0.94), material("#3f5e45", 0.95)];
-  for (let i = 0; i < 10; i += 1) {
-    const x = -10 + (i % 5) * 5;
-    const z = -6 + Math.floor(i / 5) * 12;
-    addTree(park, geometry, x, z, 0.7 + (i % 3) * 0.1, 100 + i, parkTrunk, parkFoliage);
-  }
-  const bushMaterials = [material("#446040", 0.94), material("#54704e", 0.93)];
-  for (let i = 0; i < 14; i += 1) {
-    const x = -12 + (i % 7) * 3.6;
-    const z = -8 + Math.floor(i / 7) * 16;
-    addBush(park, geometry, x, z, 0.6 + (i % 3) * 0.12, 200 + i, bushMaterials);
-  }
-  scene.add(park);
-
-  const houseBlockSpecs = [
+  const houses = [
     { x: 28, z: -34, w: 9, h: 6, d: 8 },
     { x: 38, z: -34, w: 11, h: 7, d: 9 },
     { x: 28, z: -22, w: 8, h: 5, d: 7 },
     { x: 40, z: -20, w: 10, h: 6, d: 8 },
   ];
-  const houseMaterials = [material("#cfc4b0", 0.82), material("#bfb09a", 0.84), material("#d6cbb5", 0.8)];
-  houseBlockSpecs.forEach((spec, index) => {
-    const house = addBox(
-      surroundings,
-      geometry,
-      `House_Block_${String(index + 1).padStart(2, "0")}`,
-      [spec.w, spec.h, spec.d],
-      [spec.x, spec.h / 2 - 0.04, spec.z],
-      houseMaterials[index % houseMaterials.length],
-      { castShadow: shadowed },
+  const houseColors = ["#d4c8b3", "#c2b39c", "#d9cdb7"];
+  houses.forEach((spec, index) => {
+    blockParts.push(
+      { width: spec.w, height: spec.h, depth: spec.d, x: spec.x, y: spec.h / 2 - 0.04, z: spec.z, color: houseColors[index % houseColors.length] },
+      { width: spec.w + 0.7, height: 0.34, depth: spec.d + 0.7, x: spec.x, y: spec.h + 0.13, z: spec.z, color: "#8d6f56" },
     );
-    house.userData.architecturalContext = true;
-    // Small pitched roof.
-    const roof = new THREE.Mesh(
-      geometry.box(`house-roof-${index}`, spec.w + 0.6, 0.35, spec.d + 0.6),
-      material("#8a6f5a", 0.7),
-    );
-    roof.name = `House_Block_${String(index + 1).padStart(2, "0")}_Roof`;
-    roof.position.set(spec.x, spec.h + 0.17, spec.z);
-    roof.rotation.y = Math.PI / 4;
-    surroundings.add(roof);
+    for (let col = 0; col < 2; col += 1) {
+      addWindow(0.72, 0.85, 0.05, spec.x - 1.4 + col * 2.8, 1.55, spec.z + spec.d / 2 + 0.03);
+    }
   });
 
-  createAmenityCampus(scene, geometry, shadowed);
+  const blocks = new THREE.Mesh(geometry.coloredBoxes("neighbour-blocks", blockParts), materials.stone);
+  blocks.name = "Neighbouring_Blocks";
+  blocks.castShadow = shadowed;
+  blocks.receiveShadow = true;
+  blocks.userData.architecturalContext = true;
+  surroundings.add(blocks);
+
+  const windows = new THREE.Mesh(geometry.boxes("neighbour-windows", windowParts), materials.windowGlass);
+  windows.name = "Neighbouring_Windows";
+  surroundings.add(windows);
+
+  const litWindows = new THREE.Mesh(geometry.coloredBoxes("neighbour-lit-windows", litWindowParts), materials.litWindow);
+  litWindows.name = "Neighbouring_LitWindows";
+  surroundings.add(litWindows);
+
+  scene.add(surroundings);
 }
 
 export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.Texture): TowerSceneBundle {
@@ -462,22 +676,29 @@ export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.
   scene.fog = new THREE.Fog(FOG_COLOR, 120, 245);
   const environment = suppliedEnvironment ?? createProceduralEnvironment();
   scene.environment = environment;
-  // Real browser only (tests inject an environment and have no canvas): an opaque, fog-matched sky.
+  scene.environmentIntensity = 0.9;
   if (!suppliedEnvironment) scene.background = createSkyBackground();
+  const surfaces = createSurfaceLibrary();
+  const materials = createSiteMaterials(surfaces);
   const geometry = new GeometryFactory();
   addTowerLights(scene, shadowed);
-  createSurroundings(scene, geometry, shadowed);
+  createSurroundings(scene, geometry, shadowed, materials);
+  const landscape = createLandscape(geometry, surfaces, shadowed);
+  scene.add(landscape.group);
+  createPool(scene, geometry, shadowed, materials);
+  createGym(scene, geometry, shadowed, materials);
+  createGarden(scene, geometry, shadowed, materials);
 
   const tower = new THREE.Group();
   tower.name = "Tower";
   tower.userData.heroFloorName = `Floor_${String(HERO_FLOOR_NUMBER).padStart(2, "0")}`;
-  createPodium(geometry, tower, shadowed);
+  createPodium(geometry, tower, shadowed, materials);
 
   const floors: FloorRecord[] = [];
   const slabMeshes: THREE.Mesh[] = [];
   const roomLabels: WorldLabel[] = [];
   for (let floorNumber = 1; floorNumber <= FLOOR_COUNT; floorNumber += 1) {
-    const built = createFloor(floorNumber, geometry);
+    const built = createFloor(floorNumber, geometry, surfaces);
     const baseY = PODIUM_TOP + (floorNumber - 1) * FLOOR_HEIGHT;
     built.group.position.y = baseY;
     tower.add(built.group);
@@ -525,18 +746,63 @@ export function createTowerScene(shadowed: boolean, suppliedEnvironment?: THREE.
     }
   }
 
+  const balconies = createBalconyInstances(geometry, surfaces, floors.length, shadowed);
+  tower.add(balconies.root);
+  floors.forEach((floor, index) => balconies.setFloor(index, floor.baseY, floor.group.scale.x, 1));
+  balconies.commit();
+
   const roofY = PODIUM_TOP + FLOOR_COUNT * FLOOR_HEIGHT;
-  const rooftop = createRooftop(geometry, tower, roofY);
+  const rooftop = createRooftop(geometry, tower, roofY, shadowed, materials);
   scene.add(tower);
 
-  return { scene, tower, floors, rooftop: { group: rooftop, baseY: roofY }, slabMeshes, roomLabels, environment, geometry };
+  const contactShadow = surfaces
+    ? new THREE.Mesh(
+      new THREE.PlaneGeometry(48, 34),
+      new THREE.MeshBasicMaterial({
+        map: surfaces.contactShadow,
+        color: "#262820",
+        transparent: true,
+        opacity: 0.6,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      }),
+    )
+    : null;
+  if (contactShadow) {
+    contactShadow.name = "Contact_Shadow_Tower";
+    contactShadow.rotation.x = -Math.PI / 2;
+    contactShadow.position.set(0, 0.115, 0);
+    scene.add(contactShadow);
+  }
+
+  const updateAmbient = (seconds: number) => {
+    if (!surfaces) return;
+    surfaces.waterNormal.offset.set((seconds * 0.013) % 1, (seconds * 0.008) % 1);
+  };
+
+  return {
+    scene,
+    tower,
+    floors,
+    rooftop: { group: rooftop, baseY: roofY },
+    balconies,
+    slabMeshes,
+    roomLabels,
+    environment,
+    geometry,
+    treeCount: landscape.treeCount,
+    updateAmbient,
+  };
 }
 
-
-/** Release all scene-owned GPU resources once, including shared geometries/materials. */
+/** Release all scene-owned GPU resources once, including shared geometries/materials and textures. */
 export function disposeTowerScene(world: TowerSceneBundle): void {
   const disposedGeometries = new Set<THREE.BufferGeometry>();
   const disposedMaterials = new Set<THREE.Material>();
+  const disposedTextures = new Set<THREE.Texture>();
+  const textureKeys = ["map", "normalMap", "roughnessMap", "metalnessMap", "emissiveMap", "alphaMap", "aoMap", "envMap"] as const;
+
   world.scene.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     if (!disposedGeometries.has(object.geometry)) {
@@ -546,6 +812,13 @@ export function disposeTowerScene(world: TowerSceneBundle): void {
     const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
     objectMaterials.forEach((item) => {
       if (disposedMaterials.has(item)) return;
+      for (const key of textureKeys) {
+        const texture = (item as THREE.MeshStandardMaterial)[key];
+        if (texture instanceof THREE.Texture && !disposedTextures.has(texture)) {
+          texture.dispose();
+          disposedTextures.add(texture);
+        }
+      }
       item.dispose();
       disposedMaterials.add(item);
     });

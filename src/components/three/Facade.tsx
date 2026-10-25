@@ -1,14 +1,14 @@
 /**
- * @fileoverview Facade builder: glass panel and frame grid per side.
+ * @fileoverview Facade builder: glazing, mullions and vertical fins per side.
  *
  * @project Skyline Luxury Residences
  * @type {FrontendEngineeringTask}
  * @framework Next.js (App Router) + TypeScript + Three.js
  *
  * @description
- * Each facade is its own group with a transparent glass panel and a frame grid
- * (mullions). Tracks authored opacity for the choreography opacity multiplier.
- * Only the hero floor's front facade translates/fades during interior reveal.
+ * Returns facade geometry in floor-local coordinates. Floor.tsx merges the four
+ * sides into one glass mesh and one frame mesh (except the animated hero front),
+ * keeping draw calls low without losing the per-side group anchors.
  *
  * @scope
  * - Procedural tower geometry and materials.
@@ -18,66 +18,92 @@
  * @module three/Facade
  */
 import * as THREE from "three";
-import { GeometryFactory } from "@/components/three/GeometryFactory";
 import type { BoxPart } from "@/components/three/GeometryFactory";
 
 /** Side of a facade. */
 export type FacadeSide = "Front" | "Back" | "Left" | "Right";
 
-/** Glass and frame materials for a facade. */
-export interface FacadeMaterials {
-  glass: THREE.MeshStandardMaterial;
-  frame: THREE.MeshStandardMaterial;
-}
-
-/** Built facade group and its materials. */
-export interface FacadeBuild {
+/** One facade's group anchor plus floor-local glass and metal parts. */
+export interface FacadeSpec {
   group: THREE.Group;
-  materials: FacadeMaterials;
+  glassParts: BoxPart[];
+  frameParts: BoxPart[];
 }
 
-/** Tracks authored opacity on a facade material and configures transparency/depthWrite accordingly. */
-function trackOpacity(material: THREE.Material, opacity: number): void {
-  material.userData.skylineBaseOpacity = opacity;
-  material.transparent = opacity < 0.999;
-  material.depthWrite = opacity >= 0.999;
+const WALL_HEIGHT = 2.68;
+const CENTER_Y = 1.66;
+const GLASS_HEIGHT = 2.5;
+
+function longFaceParts(length: number, outward: number, glassParts: BoxPart[], frameParts: BoxPart[]): void {
+  glassParts.push({ width: length - 0.26, height: GLASS_HEIGHT, depth: 0.05, y: CENTER_Y });
+  frameParts.push(
+    { width: length, height: 0.085, depth: 0.14, y: CENTER_Y - WALL_HEIGHT / 2 },
+    { width: length, height: 0.09, depth: 0.14, y: CENTER_Y + WALL_HEIGHT / 2 },
+    { width: 0.085, height: WALL_HEIGHT, depth: 0.14, x: -length / 2 + 0.045, y: CENTER_Y },
+    { width: 0.085, height: WALL_HEIGHT, depth: 0.14, x: length / 2 - 0.045, y: CENTER_Y },
+    { width: length - 0.1, height: 0.045, depth: 0.12, y: CENTER_Y + 0.9 },
+    { width: length - 0.1, height: 0.035, depth: 0.12, y: CENTER_Y - 0.92 },
+  );
+  const bays = Math.max(4, Math.round(length / 1.35));
+  for (let bay = 0; bay < bays; bay += 1) {
+    const x = -length / 2 + (length / bays) * (bay + 0.5);
+    frameParts.push({ width: 0.042, height: WALL_HEIGHT - 0.08, depth: 0.12, x, y: CENTER_Y });
+  }
+  for (let fin = 0; fin < 5; fin += 1) {
+    const x = -length / 2 + (length / 4) * fin;
+    frameParts.push({
+      width: 0.072,
+      height: WALL_HEIGHT + 0.22,
+      depth: 0.26,
+      x,
+      y: CENTER_Y + 0.02,
+      z: outward * 0.11,
+    });
+  }
 }
 
-/** Every facade is its own stable group, with a separate glass panel and frame mesh. */
-export function createFacade(
+function sideFaceParts(length: number, outward: number, glassParts: BoxPart[], frameParts: BoxPart[]): void {
+  glassParts.push({ width: 0.05, height: GLASS_HEIGHT, depth: length - 0.26, y: CENTER_Y });
+  frameParts.push(
+    { width: 0.14, height: 0.085, depth: length, y: CENTER_Y - WALL_HEIGHT / 2 },
+    { width: 0.14, height: 0.09, depth: length, y: CENTER_Y + WALL_HEIGHT / 2 },
+    { width: 0.14, height: WALL_HEIGHT, depth: 0.085, z: -length / 2 + 0.045, y: CENTER_Y },
+    { width: 0.14, height: WALL_HEIGHT, depth: 0.085, z: length / 2 - 0.045, y: CENTER_Y },
+    { width: 0.12, height: 0.045, depth: length - 0.1, y: CENTER_Y + 0.9 },
+    { width: 0.12, height: 0.035, depth: length - 0.1, y: CENTER_Y - 0.92 },
+  );
+  const bays = Math.max(3, Math.round(length / 1.35));
+  for (let bay = 0; bay < bays; bay += 1) {
+    const z = -length / 2 + (length / bays) * (bay + 0.5);
+    frameParts.push({ width: 0.12, height: WALL_HEIGHT - 0.08, depth: 0.042, z, y: CENTER_Y });
+  }
+  for (let fin = 0; fin < 4; fin += 1) {
+    const z = -length / 2 + (length / 3) * fin;
+    frameParts.push({
+      width: 0.26,
+      height: WALL_HEIGHT + 0.22,
+      depth: 0.072,
+      x: outward * 0.11,
+      y: CENTER_Y + 0.02,
+      z,
+    });
+  }
+}
+
+/**
+ * Builds one facade's geometry in floor-local coordinates. The returned group is
+ * the stable anchor used by the choreography; parts still need to be merged.
+ */
+export function createFacadeSpec(
   side: FacadeSide,
   floorNumber: number,
-  geometry: GeometryFactory,
   floorWidth: number,
   floorDepth: number,
-): FacadeBuild {
+): FacadeSpec {
   const group = new THREE.Group();
   group.name = `Facade_${side}`;
   group.userData.floorNumber = floorNumber;
 
-  const glass = new THREE.MeshStandardMaterial({
-    color: "#5fa8b5",
-    roughness: 0.14,
-    metalness: 0.32,
-    transparent: true,
-    opacity: 0.58,
-    depthWrite: false,
-    envMapIntensity: 1.1,
-  });
-  const frame = new THREE.MeshStandardMaterial({
-    color: "#c9a87a",
-    roughness: 0.28,
-    metalness: 0.78,
-    transparent: true,
-    opacity: 1,
-    emissive: "#b8945a",
-    emissiveIntensity: 0.18,
-  });
-  trackOpacity(glass, 0.58);
-  trackOpacity(frame, 1);
-
-  const wallHeight = 2.72;
-  const centerY = 1.6;
   const isFront = side === "Front";
   const isBack = side === "Back";
   const isLongFace = isFront || isBack;
@@ -87,44 +113,24 @@ export function createFacade(
   if (side === "Left") group.position.x = -floorWidth / 2 + 0.02;
   if (side === "Right") group.position.x = floorWidth / 2 - 0.02;
 
-  const panelGeometry = isLongFace
-    ? geometry.box("facade-glass-long", length - 0.18, wallHeight - 0.12, 0.055)
-    : geometry.box("facade-glass-side", 0.055, wallHeight - 0.12, length - 0.18);
-  const panel = new THREE.Mesh(panelGeometry, glass);
-  panel.name = "GlassPanel";
-  panel.position.y = centerY;
-  group.add(panel);
-
+  const glassParts: BoxPart[] = [];
   const frameParts: BoxPart[] = [];
   if (isLongFace) {
-    frameParts.push(
-      { width: length, height: 0.075, depth: 0.11, y: centerY - wallHeight / 2 },
-      { width: length, height: 0.075, depth: 0.11, y: centerY + wallHeight / 2 },
-      { width: 0.08, height: wallHeight, depth: 0.11, x: -length / 2 + 0.04, y: centerY },
-      { width: 0.08, height: wallHeight, depth: 0.11, x: length / 2 - 0.04, y: centerY },
-      { width: length - 0.12, height: 0.045, depth: 0.11, y: centerY - 0.08 },
-    );
-    for (const x of [-length * 0.4, -length * 0.2, 0, length * 0.2, length * 0.4]) {
-      frameParts.push({ width: 0.045, height: wallHeight - 0.08, depth: 0.11, x, y: centerY });
-    }
+    longFaceParts(length, isFront ? 1 : -1, glassParts, frameParts);
   } else {
-    frameParts.push(
-      { width: 0.11, height: 0.075, depth: length, y: centerY - wallHeight / 2 },
-      { width: 0.11, height: 0.075, depth: length, y: centerY + wallHeight / 2 },
-      { width: 0.11, height: wallHeight, depth: 0.08, z: -length / 2 + 0.04, y: centerY },
-      { width: 0.11, height: wallHeight, depth: 0.08, z: length / 2 - 0.04, y: centerY },
-      { width: 0.11, height: 0.045, depth: length - 0.12, y: centerY - 0.08 },
-    );
-    for (const z of [-length * 0.35, 0, length * 0.35]) {
-      frameParts.push({ width: 0.11, height: wallHeight - 0.08, depth: 0.045, z, y: centerY });
-    }
+    sideFaceParts(length, side === "Right" ? 1 : -1, glassParts, frameParts);
   }
-  const frameMesh = new THREE.Mesh(geometry.boxes(`facade-frame-${side}`, frameParts), frame);
-  frameMesh.name = "FrameGrid";
-  frameMesh.castShadow = false;
-  group.add(frameMesh);
 
-  return { group, materials: { glass, frame } };
+  return { group, glassParts, frameParts };
+}
+
+/** Bakes a side group's offset into its parts so four sides can share one merged mesh. */
+export function offsetFacadeParts(parts: readonly BoxPart[], group: THREE.Object3D): BoxPart[] {
+  return parts.map((part) => ({
+    ...part,
+    x: (part.x ?? 0) + group.position.x,
+    z: (part.z ?? 0) + group.position.z,
+  }));
 }
 
 /** Collects all unique materials within a subtree (used for per-floor opacity control). */

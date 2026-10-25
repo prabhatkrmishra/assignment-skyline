@@ -28,6 +28,7 @@ import {
   heroFacadeOpenProgress,
 } from "@/lib/scroll/timeline";
 import type { FloorRecord, RooftopRecord } from "@/components/three/TowerScene";
+import type { BalconyInstances } from "@/components/three/Balcony";
 
 /**
  * Apply the complete tower state for one normalized scroll position.
@@ -43,14 +44,16 @@ export function applyTowerScrollProgress(
   floors: readonly FloorRecord[],
   progress: number,
   rooftop?: RooftopRecord,
+  balconies?: BalconyInstances,
 ): void {
   const lift = dollhouseLiftProgress(progress) * DOLLHOUSE_LIFT_HEIGHT;
   const heroOpen = heroFacadeOpenProgress(progress);
 
-  for (const floor of floors) {
+  for (const [index, floor] of floors.entries()) {
     const state = floorBuildState(progress, floor.number);
     const dollhouseOffset = floor.number > HERO_FLOOR_NUMBER ? lift : 0;
     floor.group.position.y = floor.baseY + state.verticalOffset + dollhouseOffset;
+    balconies?.setFloor(index, floor.group.position.y, floor.group.scale.x, state.opacity);
     for (const item of floor.materialStates) {
       // The panel is fully transparent by ~55% of its lift, so no floating frame hangs in front of the rooms.
       const panelMultiplier = item.isFrontFacade && floor.number === HERO_FLOOR_NUMBER ? Math.max(0, 1 - heroOpen * 1.8) : 1;
@@ -60,6 +63,7 @@ export function applyTowerScrollProgress(
       item.material.depthWrite = opacity >= 0.999 ? item.baseDepthWrite : false;
     }
   }
+  balconies?.commit();
 
   // The roof rides with the top floor so it never floats away from it during Build-up or the lift.
   if (rooftop) {
