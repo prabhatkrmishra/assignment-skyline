@@ -188,6 +188,46 @@ test.describe("Skyline user journeys", () => {
     await expect(page.getByRole("heading", { name: /Thank you\. We’ll be in touch/i })).toBeVisible();
   });
 
+  test("sends an enquiry straight from the landing page chooser", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ "x-real-ip": `e2e-landing-form-${randomUUID()}` });
+    await page.goto("/");
+    const section = page.locator("#enquire");
+    await section.scrollIntoViewIfNeeded();
+
+    const chooser = page.getByLabel("Enquiring about");
+    await expect(chooser).toBeVisible({ timeout: 15_000 });
+    const selectedLabel = await chooser.locator("option:checked").textContent();
+    expect(selectedLabel).toBeTruthy();
+
+    await section.getByLabel("Full name").fill("Meera Iyer");
+    await section.getByLabel("Mobile number").fill("9812345678");
+    await section.getByLabel(/Anything you’d like us to know/i).fill("I would like a private visit this weekend.");
+    await section.getByLabel("Preferred visit date").fill(futureVisitDate());
+    await section.getByRole("button", { name: /Request a private visit/i }).click();
+
+    // The residence named in the chooser is the one the enquiry is filed against.
+    await expect(section.getByRole("status").getByText(`Your enquiry for ${selectedLabel!.split(" · ")[0]} has been received.`)).toBeVisible();
+  });
+
+  test("clears the landing enquiry form when the residence chooser changes", async ({ page }) => {
+    await page.goto("/");
+    const section = page.locator("#enquire");
+    await section.scrollIntoViewIfNeeded();
+
+    const chooser = page.getByLabel("Enquiring about");
+    await expect(chooser).toBeVisible({ timeout: 15_000 });
+    const choiceCount = await chooser.locator("option").count();
+    test.skip(choiceCount < 2, "the collection needs two residences to switch between");
+    const secondValue = await chooser.locator("option").nth(1).getAttribute("value");
+    expect(secondValue).toBeTruthy();
+
+    await section.getByLabel("Full name").fill("Rhea Menon");
+    await chooser.selectOption(secondValue!);
+
+    await expect(chooser).toHaveValue(secondValue!);
+    await expect(section.getByLabel("Full name")).toHaveValue("");
+  });
+
   test("rate-limits the sixth enquiry from the same client", async ({ request }) => {
     const listingResponse = await request.get("/api/properties?limit=1");
     expect(listingResponse.ok()).toBeTruthy();
